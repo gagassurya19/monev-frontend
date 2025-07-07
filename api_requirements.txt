@@ -1,0 +1,1240 @@
+===============================================================================
+                       API REQUIREMENTS - DASHBOARD LMS TELKOM UNIVERSITY
+===============================================================================
+
+🔐 **0. AUTHENTICATION APIs (NO LOGIN PAGE REQUIRED)**
+
+0.1 POST /api/auth/validate-token
+    Fungsi: Validasi JWT token dan return user data
+    
+    Headers:
+    - Authorization: Bearer <jwt_token>
+    - Content-Type: application/json
+    
+    Alternative Query Parameter:
+    - ?token=<jwt_token>
+    
+    Response Structure (Success):
+    {
+      "success": true,
+      "user": {
+        "uid": "dcd-135600",
+        "dicodingUserId": 135600,
+        "userId": "fc012d5y1652",
+        "role": "STUDENT" | "INSTRUCTOR" | "ADMIN",
+        "profile": {
+          "full_name": "Nama Lengkap User",
+          "email": "user@student.telkomuniversity.ac.id",
+          "program_studi": "Teknik Informatika",
+          "nim": "1234567890" // untuk STUDENT
+          "nip": "198501012010" // untuk INSTRUCTOR
+        },
+        "permissions": {
+          "can_view_all_courses": boolean,
+          "can_export_data": boolean,
+          "can_view_analytics": boolean,
+          "accessible_courses": number[] // course_id yang bisa diakses
+        },
+        "token_info": {
+          "issued_at": "2024-01-04T10:20:00Z",
+          "expires_at": "2024-01-04T11:20:00Z",
+          "remaining_time": 3600 // seconds
+        }
+      }
+    }
+    
+    Response Structure (Error):
+    {
+      "success": false,
+      "error": {
+        "code": "INVALID_TOKEN" | "EXPIRED_TOKEN" | "INSUFFICIENT_PERMISSIONS",
+        "message": "Token tidak valid atau sudah kedaluwarsa",
+        "details": {
+          "token_status": "expired" | "invalid" | "malformed",
+          "expires_at": "2024-01-04T11:20:00Z"
+        }
+      }
+    }
+
+0.2 GET /api/auth/user-profile
+    Fungsi: Mendapatkan profil lengkap user berdasarkan token
+    
+    Headers:
+    - Authorization: Bearer <jwt_token>
+    
+    Response Structure:
+    {
+      "user_profile": {
+        "uid": "dcd-135600",
+        "dicodingUserId": 135600,
+        "userId": "fc012d5y1652", 
+        "role": "STUDENT",
+        "personal_info": {
+          "full_name": "Ahmad Rizki Pratama",
+          "email": "ahmad.rizki@student.telkomuniversity.ac.id",
+          "nim": "1301204001", // untuk STUDENT
+          "program_studi": "S1 Teknik Informatika",
+          "angkatan": "2020",
+          "status": "Aktif"
+        },
+        "academic_info": {
+          "semester_current": 8,
+          "ipk": 3.75,
+          "sks_total": 144,
+          "sks_lulus": 128
+        },
+        "enrollment_summary": {
+          "total_courses_enrolled": 12,
+          "active_courses": 6,
+          "completed_courses": 6,
+          "total_activities_completed": 245
+        },
+        "recent_activity": {
+          "last_login": "2024-01-04T10:15:30Z",
+          "last_activity": "2024-01-04T10:20:45Z",
+          "recent_courses": [
+            {
+              "course_id": 101,
+              "course_name": "Pemrograman Web Lanjut",
+              "last_accessed": "2024-01-04T09:30:00Z"
+            }
+          ]
+        }
+      }
+    }
+
+0.3 POST /api/auth/refresh-token
+    Fungsi: Refresh JWT token sebelum expired
+    
+    Headers:
+    - Authorization: Bearer <jwt_token>
+    
+    Response Structure:
+    {
+      "success": true,
+      "new_token": "eyJ0eXAiOiJKV1QiLCJhbGci...",
+      "token_info": {
+        "issued_at": "2024-01-04T10:25:00Z",
+        "expires_at": "2024-01-04T11:25:00Z",
+        "refresh_interval": 3300 // recommended refresh time in seconds
+      },
+      "user": {
+        // same as validate-token response
+      }
+    }
+
+===============================================================================
+
+📚 **1. COURSE MANAGEMENT APIs**
+
+1.1 GET /api/courses
+    Fungsi: Mengambil daftar semua mata kuliah dengan filtering dan pagination
+    
+    Query Parameters:
+    - page?: number = 1
+    - limit?: number = 10  
+    - search?: string
+    - dosen_pengampu?: string
+    - activity_type?: string
+    - sort_by?: 'course_name' | 'jumlah_mahasiswa' | 'jumlah_aktivitas'
+    - sort_order?: 'asc' | 'desc'
+    
+    Response Structure:
+    {
+      data: Course[],
+      pagination: {
+        current_page: number,
+        total_pages: number,
+        total_items: number,
+        items_per_page: number
+      },
+      filters_applied: {
+        search?: string,
+        dosen_pengampu?: string,
+        activity_type?: string
+      }
+    }
+
+1.2 GET /api/courses/{course_id}
+    Fungsi: Mengambil detail mata kuliah tertentu
+    
+    Response Structure:
+    Course & {
+      activities_summary: {
+        total_activities: number,
+        by_type: {
+          resource: number,
+          assign: number,
+          quiz: number
+        }
+      },
+      student_enrollment: {
+        total_enrolled: number,
+        active_students: number
+      }
+    }
+
+===============================================================================
+
+📝 **2. ACTIVITY MANAGEMENT APIs**
+
+2.1 GET /api/courses/{course_id}/activities  
+    Fungsi: Mengambil semua aktivitas dalam mata kuliah tertentu
+    
+    Query Parameters:
+    - activity_type?: 'resource' | 'assign' | 'quiz'
+    - section?: number
+    - page?: number = 1
+    - limit?: number = 20
+    
+    Response Structure:
+    {
+      data: ActivitySummary[],
+      pagination: PaginationInfo,
+      course_info: {
+        course_id: number,
+        course_name: string,
+        kelas: string
+      }
+    }
+
+2.2 GET /api/activities/{activity_id}
+    Fungsi: Mengambil detail aktivitas tertentu
+    
+    Response Structure:
+    ActivitySummary & {
+      course_info: {
+        course_name: string,
+        kelas: string,
+        dosen_pengampu: string
+      },
+      participation_stats: {
+        total_participants: number,
+        completion_rate: number,
+        average_score?: number
+      }
+    }
+
+===============================================================================
+
+👥 **3. STUDENT DATA APIs**
+
+3.1 GET /api/activities/{activity_id}/students
+    Fungsi: Mengambil data mahasiswa yang berpartisipasi dalam aktivitas tertentu
+    
+    Query Parameters:
+    - page?: number = 1
+    - limit?: number = 10
+    - search?: string (cari berdasarkan nama/NIM)
+    - program_studi?: string
+    - sort_by?: 'full_name' | 'nim' | 'nilai' | 'waktu_aktivitas'
+    - sort_order?: 'asc' | 'desc'
+    
+    Response Structure:
+    {
+      data: StudentDisplayData[],
+      pagination: PaginationInfo,
+      activity_info: {
+        activity_id: number,
+        activity_name: string,
+        activity_type: string,
+        course_name: string
+      },
+      statistics: {
+        total_participants: number,
+        average_score?: number,
+        completion_rate: number
+      }
+    }
+
+3.2 GET /api/students/{user_id}/profile
+    Fungsi: Mengambil profil lengkap mahasiswa
+    
+    Response Structure:
+    StudentProfile & {
+      enrollment_info: {
+        total_courses: number,
+        active_courses: number,
+        completed_activities: number
+      },
+      performance_summary: {
+        average_grade: number,
+        total_submissions: number,
+        total_quiz_attempts: number
+      }
+    }
+
+===============================================================================
+
+📊 **4. ANALYTICS & STATISTICS APIs**
+
+4.1 GET /api/analytics/dashboard
+    Fungsi: Mengambil statistik utama untuk dashboard
+    
+    Query Parameters:
+    - date_range?: 'week' | 'month' | 'semester' | 'custom'
+    - start_date?: string (YYYY-MM-DD)
+    - end_date?: string (YYYY-MM-DD)
+    
+    Response Structure:
+    {
+      summary_stats: {
+        total_courses: number,
+        total_activities: number,
+        total_students: number,
+        average_grade: number
+      },
+      activity_trends: {
+        weekly_data: {
+          week: string,
+          courses: number,
+          activities: number,
+          students: number
+        }[],
+        activity_type_distribution: {
+          resource: number,
+          assign: number,
+          quiz: number
+        }
+      },
+      performance_metrics: {
+        completion_rates: {
+          assignments: number,
+          quizzes: number,
+          resources: number
+        },
+        grade_distribution: {
+          range: string,
+          count: number
+        }[]
+      }
+    }
+
+4.2 GET /api/analytics/courses/{course_id}/performance
+    Fungsi: Analisis performa mata kuliah tertentu
+    
+    Response Structure:
+    {
+      course_info: Course,
+      performance_summary: {
+        total_activities: number,
+        student_participation_rate: number,
+        average_completion_time: string,
+        grade_statistics: {
+          mean: number,
+          median: number,
+          std_deviation: number
+        }
+      },
+      activity_breakdown: {
+        activity_type: string,
+        count: number,
+        avg_participation: number,
+        avg_score?: number
+      }[],
+      time_series_data: {
+        date: string,
+        active_students: number,
+        submissions: number,
+        avg_score: number
+      }[]
+    }
+
+===============================================================================
+
+🔍 **5. SEARCH & FILTER APIs**
+
+5.1 GET /api/search
+    Fungsi: Global search untuk courses, activities, dan students
+    
+    Query Parameters:
+    - q: string (search term)
+    - type?: 'courses' | 'activities' | 'students' | 'all'
+    - limit?: number = 10
+    
+    Response Structure:
+    {
+      results: {
+        courses: {
+          course_id: number,
+          course_name: string,
+          kelas: string,
+          dosen_pengampu: string,
+          match_type: 'name' | 'class' | 'instructor'
+        }[],
+        activities: {
+          activity_id: number,
+          activity_name: string,
+          activity_type: string,
+          course_name: string,
+          match_type: 'name' | 'type'
+        }[],
+        students: {
+          user_id: number,
+          nim: string,
+          full_name: string,
+          program_studi: string,
+          match_type: 'name' | 'nim' | 'program'
+        }[]
+      },
+      total_results: number,
+      search_suggestions: string[]
+    }
+
+5.2 GET /api/filters/options
+    Fungsi: Mengambil opsi untuk dropdown filter
+    
+    Response Structure:
+    {
+      activity_types: {
+        value: string,
+        label: string,
+        count: number
+      }[],
+      dosen_pengampu: {
+        value: string,
+        label: string,
+        course_count: number
+      }[],
+      program_studi: {
+        value: string,
+        label: string,
+        student_count: number
+      }[],
+      sort_options: {
+        value: string,
+        label: string
+      }[]
+    }
+
+===============================================================================
+
+📤 **6. EXPORT & REPORT APIs**
+
+6.1 GET /api/export/courses
+    Fungsi: Export data mata kuliah ke Excel/CSV
+    
+    Query Parameters:
+    - format: 'xlsx' | 'csv'
+    - filters?: sama seperti GET /api/courses
+    - include_activities?: boolean = false
+    - include_students?: boolean = false
+    
+    Response: File download
+
+6.2 GET /api/export/activities/{activity_id}/students
+    Fungsi: Export data mahasiswa dalam aktivitas tertentu
+    
+    Query Parameters:
+    - format: 'xlsx' | 'csv'
+    - include_details?: boolean = true
+    
+    Response: File download
+
+===============================================================================
+
+🔄 **7. REAL-TIME & REFRESH APIs**
+
+7.1 GET /api/dashboard/refresh
+    Fungsi: Refresh semua data dashboard
+    
+    Response Structure:
+    {
+      last_updated: string,
+      data_freshness: {
+        courses: string,
+        activities: string,
+        students: string,
+        analytics: string
+      },
+      cache_status: 'fresh' | 'stale' | 'expired'
+    }
+
+===============================================================================
+
+⚙️ **8. USER PREFERENCES APIs**
+
+8.1 GET /api/user/preferences
+    Fungsi: Mengambil preferensi user untuk dashboard
+    
+    Response Structure:
+    {
+      recent_searches: string[],
+      default_filters: Filters,
+      items_per_page: number,
+      preferred_sort: {
+        sort_by: string,
+        sort_order: 'asc' | 'desc'
+      }
+    }
+
+8.2 POST /api/user/preferences
+    Fungsi: Menyimpan preferensi user
+    
+    Request Body:
+    {
+      recent_searches?: string[],
+      default_filters?: Partial<Filters>,
+      items_per_page?: number,
+      preferred_sort?: {
+        sort_by: string,
+        sort_order: 'asc' | 'desc'
+      }
+    }
+    
+    Response: { success: boolean }
+
+===============================================================================
+
+🛠️ **TECHNICAL REQUIREMENTS**
+
+AUTHENTICATION & AUTHORIZATION:
+- Semua API endpoint memerlukan JWT authentication token
+- Token dikirim via Authorization header: "Bearer <token>"
+- Alternative: Token dapat dikirim via query parameter: ?token=<jwt_token>
+- JWT menggunakan algoritma RS256 untuk signature verification
+- Role-based access control berdasarkan claim dalam JWT:
+  * STUDENT: Akses terbatas ke data pribadi
+  * INSTRUCTOR/DOSEN: Akses ke mata kuliah yang diampu
+  * ADMIN: Akses penuh ke seluruh sistem
+- Rate limiting untuk mencegah abuse
+
+JWT TOKEN STRUCTURE:
+Header:
+{
+  "typ": "JWT",
+  "alg": "RS256"
+}
+
+Payload Claims:
+{
+  "iss": "dicoding-auth-integration@codingcamp-dbs.iam.gserviceaccount.com",
+  "sub": "dicoding-auth-integration@codingcamp-dbs.iam.gserviceaccount.com",
+  "aud": "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+  "iat": timestamp,
+  "exp": timestamp,
+  "uid": "dcd-{userId}",
+  "claims": {
+    "dicodingUserId": number,
+    "userId": "string",
+    "role": "STUDENT" | "INSTRUCTOR" | "ADMIN"
+  }
+}
+
+TOKEN VALIDATION:
+- Validasi signature menggunakan public key dari Google Identity Toolkit
+- Cek exp (expiration) untuk memastikan token masih valid
+- Validasi iss (issuer) dan aud (audience) sesuai konfigurasi
+- Extract user info dari claims untuk authorization
+
+PERFORMANCE OPTIMIZATION:
+- Response caching untuk data yang jarang berubah
+- Pagination untuk semua list endpoints
+- Database indexing untuk field yang sering diquery
+- CDN untuk static assets
+
+ERROR HANDLING:
+Standard Error Response Structure:
+{
+  error: {
+    code: string,
+    message: string,
+    details?: any
+  },
+  timestamp: string,
+  request_id: string
+}
+
+API VERSIONING:
+- Menggunakan versioning dalam URL: /api/v1/
+- Backward compatibility untuk minimal 2 versi
+
+===============================================================================
+
+🔐 **AUTHENTICATION IMPLEMENTATION**
+
+MIDDLEWARE EXAMPLE (Node.js/Express):
+```javascript
+const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+
+const authenticateJWT = async (req, res, next) => {
+  try {
+    // Extract token from Authorization header or query parameter
+    let token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      token = req.query.token;
+    }
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+
+    // Verify JWT token with Google Identity Toolkit
+    const client = new OAuth2Client();
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit'
+    });
+    
+    const payload = ticket.getPayload();
+    
+    // Extract user information
+    req.user = {
+      uid: payload.uid,
+      dicodingUserId: payload.claims.dicodingUserId,
+      userId: payload.claims.userId,
+      role: payload.claims.role,
+      tokenExpiry: payload.exp
+    };
+    
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+```
+
+AUTHORIZATION MIDDLEWARE:
+```javascript
+const authorize = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: 'Insufficient permissions',
+        required_role: allowedRoles,
+        user_role: req.user.role
+      });
+    }
+    next();
+  };
+};
+
+// Usage examples:
+// app.use('/api/admin/*', authorize(['ADMIN']));
+// app.use('/api/courses', authorize(['ADMIN', 'INSTRUCTOR']));
+// app.use('/api/students/profile', authorize(['ADMIN', 'INSTRUCTOR', 'STUDENT']));
+```
+
+FRONTEND TOKEN HANDLING (NO LOGIN PAGE):
+```javascript
+// Authentication service
+class AuthService {
+  constructor() {
+    this.user = null;
+    this.token = null;
+    this.isAuthenticated = false;
+  }
+
+  // Initialize authentication from URL token
+  async initializeAuth() {
+    // Extract token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      // Store token
+      localStorage.setItem('auth_token', token);
+      this.token = token;
+      
+      // Remove token from URL for security
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Validate token and get user data
+      await this.validateToken();
+    } else {
+      // Try to use stored token
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken) {
+        this.token = storedToken;
+        await this.validateToken();
+      } else {
+        this.handleNoToken();
+      }
+    }
+  }
+
+  // Validate token via API
+  async validateToken() {
+    try {
+      const response = await fetch('/api/auth/validate-token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        this.user = result.user;
+        this.isAuthenticated = true;
+        
+        // Setup auto-refresh before token expires
+        this.setupTokenRefresh(result.user.token_info.remaining_time);
+        
+        return result.user;
+      } else {
+        this.handleAuthError(result.error);
+      }
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      this.handleAuthError({ code: 'NETWORK_ERROR', message: 'Network error' });
+    }
+  }
+
+  // Setup automatic token refresh
+  setupTokenRefresh(remainingTime) {
+    // Refresh 5 minutes before expiry
+    const refreshTime = Math.max(remainingTime - 300, 60) * 1000;
+    
+    setTimeout(async () => {
+      await this.refreshToken();
+    }, refreshTime);
+  }
+
+  // Refresh token
+  async refreshToken() {
+    try {
+      const response = await fetch('/api/auth/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        this.token = result.new_token;
+        localStorage.setItem('auth_token', this.token);
+        this.user = result.user;
+        
+        // Setup next refresh
+        this.setupTokenRefresh(result.token_info.refresh_interval);
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      this.handleAuthError({ code: 'REFRESH_FAILED' });
+    }
+  }
+
+  // Handle authentication errors
+  handleAuthError(error) {
+    console.error('Authentication error:', error);
+    
+    // Clear stored data
+    localStorage.removeItem('auth_token');
+    this.token = null;
+    this.user = null;
+    this.isAuthenticated = false;
+
+    // Show error message to user
+    this.showAuthError(error);
+  }
+
+  // Handle no token scenario
+  handleNoToken() {
+    // Redirect to Dicoding platform or show error
+    alert('Token tidak ditemukan. Silakan akses melalui platform Dicoding.');
+    // window.location.href = 'https://codingcamp.dicoding.com/';
+  }
+
+  // Show authentication error
+  showAuthError(error) {
+    const errorMessages = {
+      'INVALID_TOKEN': 'Token tidak valid. Silakan login ulang.',
+      'EXPIRED_TOKEN': 'Token sudah kedaluwarsa. Silakan login ulang.',
+      'NETWORK_ERROR': 'Gagal terhubung ke server. Periksa koneksi internet.',
+      'REFRESH_FAILED': 'Gagal memperpanjang sesi. Silakan login ulang.'
+    };
+    
+    const message = errorMessages[error.code] || 'Terjadi kesalahan authentication.';
+    alert(message);
+  }
+
+  // Make authenticated API calls
+  async apiCall(endpoint, options = {}) {
+    if (!this.isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+
+    const config = {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    };
+
+    const response = await fetch(endpoint, config);
+
+    // Handle authentication errors
+    if (response.status === 401) {
+      await this.validateToken(); // Try to refresh
+      if (!this.isAuthenticated) {
+        this.handleNoToken();
+        throw new Error('Authentication failed');
+      }
+      // Retry request with new token
+      config.headers['Authorization'] = `Bearer ${this.token}`;
+      return fetch(endpoint, config);
+    }
+
+    return response;
+  }
+
+  // Get user permissions
+  hasPermission(permission) {
+    return this.user?.permissions?.[permission] || false;
+  }
+
+  // Check if user can access course
+  canAccessCourse(courseId) {
+    if (this.user?.role === 'ADMIN') return true;
+    return this.user?.permissions?.accessible_courses?.includes(courseId) || false;
+  }
+}
+
+// Initialize auth service
+const authService = new AuthService();
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', async () => {
+  await authService.initializeAuth();
+  
+  // Only proceed if authenticated
+  if (authService.isAuthenticated) {
+    initializeDashboard();
+  }
+});
+
+// Usage example
+async function loadDashboardData() {
+  try {
+    const response = await authService.apiCall('/api/analytics/dashboard');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to load dashboard:', error);
+  }
+}
+```
+
+BACKEND SIMULATION IMPLEMENTATION:
+```javascript
+// Mock user database for simulation
+const mockUsers = {
+  'dcd-135600': { // STUDENT
+    uid: 'dcd-135600',
+    dicodingUserId: 135600,
+    userId: 'fc012d5y1652',
+    role: 'STUDENT',
+    profile: {
+      full_name: 'Ahmad Rizki Pratama',
+      email: 'ahmad.rizki@student.telkomuniversity.ac.id',
+      program_studi: 'S1 Teknik Informatika',
+      nim: '1301204001',
+      angkatan: '2020',
+      status: 'Aktif'
+    },
+    permissions: {
+      can_view_all_courses: false,
+      can_export_data: false,
+      can_view_analytics: false,
+      accessible_courses: [101, 102, 103, 104, 105, 106] // enrolled courses
+    },
+    academic_info: {
+      semester_current: 8,
+      ipk: 3.75,
+      sks_total: 144,
+      sks_lulus: 128
+    }
+  },
+  'dcd-789012': { // INSTRUCTOR
+    uid: 'dcd-789012',
+    dicodingUserId: 789012,
+    userId: 'inst001',
+    role: 'INSTRUCTOR',
+    profile: {
+      full_name: 'Dr. Siti Nurhaliza, M.Kom',
+      email: 'siti.nurhaliza@telkomuniversity.ac.id',
+      program_studi: 'Fakultas Informatika',
+      nip: '198501012010',
+      jabatan: 'Dosen Tetap',
+      status: 'Aktif'
+    },
+    permissions: {
+      can_view_all_courses: false,
+      can_export_data: true,
+      can_view_analytics: true,
+      accessible_courses: [101, 102, 105, 108, 109] // courses yang diampu
+    }
+  },
+  'dcd-999999': { // ADMIN
+    uid: 'dcd-999999',
+    dicodingUserId: 999999,
+    userId: 'admin001',
+    role: 'ADMIN',
+    profile: {
+      full_name: 'Administrator System',
+      email: 'admin@telkomuniversity.ac.id',
+      program_studi: 'IT Support',
+      nip: 'ADM001',
+      jabatan: 'System Administrator',
+      status: 'Aktif'
+    },
+    permissions: {
+      can_view_all_courses: true,
+      can_export_data: true,
+      can_view_analytics: true,
+      accessible_courses: [] // empty means all courses
+    }
+  }
+};
+
+// API Implementation - POST /api/auth/validate-token
+app.post('/api/auth/validate-token', async (req, res) => {
+  try {
+    // Extract token from header or query
+    let token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'MISSING_TOKEN',
+          message: 'Token authentication required'
+        }
+      });
+    }
+
+    // Decode JWT to get payload (simulation - normally verify signature)
+    const base64Payload = token.split('.')[1];
+    const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+    
+    // Check token expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp < now) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'EXPIRED_TOKEN',
+          message: 'Token sudah kedaluwarsa',
+          details: {
+            token_status: 'expired',
+            expires_at: new Date(payload.exp * 1000).toISOString()
+          }
+        }
+      });
+    }
+
+    // Get user data from mock database
+    const userData = mockUsers[payload.uid];
+    if (!userData) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'User tidak ditemukan'
+        }
+      });
+    }
+
+    // Return successful validation
+    res.json({
+      success: true,
+      user: {
+        ...userData,
+        token_info: {
+          issued_at: new Date(payload.iat * 1000).toISOString(),
+          expires_at: new Date(payload.exp * 1000).toISOString(),
+          remaining_time: payload.exp - now
+        }
+      }
+    });
+
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Token format tidak valid',
+        details: {
+          token_status: 'malformed'
+        }
+      }
+    });
+  }
+});
+
+// API Implementation - GET /api/auth/user-profile
+app.get('/api/auth/user-profile', authenticateJWT, (req, res) => {
+  const userData = mockUsers[req.user.uid];
+  
+  const profileData = {
+    user_profile: {
+      ...userData,
+      enrollment_summary: {
+        total_courses_enrolled: userData.permissions.accessible_courses.length,
+        active_courses: userData.permissions.accessible_courses.length,
+        completed_courses: Math.floor(userData.permissions.accessible_courses.length * 0.5),
+        total_activities_completed: Math.floor(Math.random() * 300) + 100
+      },
+      recent_activity: {
+        last_login: new Date(Date.now() - Math.random() * 3600000).toISOString(),
+        last_activity: new Date().toISOString(),
+        recent_courses: userData.permissions.accessible_courses.slice(0, 3).map(courseId => ({
+          course_id: courseId,
+          course_name: `Course ${courseId}`,
+          last_accessed: new Date(Date.now() - Math.random() * 86400000).toISOString()
+        }))
+      }
+    }
+  };
+
+  res.json(profileData);
+});
+
+// API Implementation - POST /api/auth/refresh-token
+app.post('/api/auth/refresh-token', authenticateJWT, (req, res) => {
+  // Generate new token with extended expiry (simulation)
+  const newToken = generateNewJWT(req.user);
+  
+  res.json({
+    success: true,
+    new_token: newToken,
+    token_info: {
+      issued_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+      refresh_interval: 3300 // 55 minutes
+    },
+    user: mockUsers[req.user.uid]
+  });
+});
+
+// Helper function to generate new JWT (simulation)
+function generateNewJWT(user) {
+  const header = { typ: 'JWT', alg: 'RS256' };
+  const payload = {
+    iss: 'dicoding-auth-integration@codingcamp-dbs.iam.gserviceaccount.com',
+    sub: 'dicoding-auth-integration@codingcamp-dbs.iam.gserviceaccount.com',
+    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+    uid: user.uid,
+    claims: {
+      dicodingUserId: user.dicodingUserId,
+      userId: user.userId,
+      role: user.role
+    }
+  };
+  
+  // In real implementation, sign with private key
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64');
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64');
+  
+  return `${encodedHeader}.${encodedPayload}.mock_signature`;
+}
+```
+
+ROLE-BASED ACCESS CONTROL:
+- STUDENT: 
+  * Dapat melihat course yang diikuti
+  * Dapat melihat aktivitas dalam course tersebut
+  * Dapat melihat data pribadi (nilai, progress)
+  * Tidak dapat melihat data mahasiswa lain
+
+- INSTRUCTOR/DOSEN:
+  * Dapat melihat semua course yang diampu
+  * Dapat melihat semua aktivitas dalam course tersebut
+  * Dapat melihat data semua mahasiswa dalam course yang diampu
+  * Dapat export data course dan mahasiswa
+
+- ADMIN:
+  * Akses penuh ke semua endpoint
+  * Dapat melihat semua course, aktivitas, dan mahasiswa
+  * Dapat mengakses analytics dan reports
+  * Dapat export semua data
+
+===============================================================================
+
+📋 **DATA MODELS (TypeScript Interfaces)**
+
+interface Course {
+  course_id: number
+  course_name: string
+  kelas: string
+  jumlah_aktivitas: number
+  jumlah_mahasiswa: number
+  dosen_pengampu: string
+}
+
+interface ActivitySummary {
+  id: number
+  course_id: number
+  section: number
+  activity_id: number
+  activity_type: string
+  activity_name: string
+  accessed_count: number
+  submission_count: number | null
+  graded_count: number | null
+  attempted_count: number | null
+  created_at: string
+}
+
+interface StudentDisplayData {
+  user_id: number
+  nim: string
+  full_name: string
+  activity_type: string
+  waktu_aktivitas: string
+  durasi_pengerjaan?: string
+  nilai?: number
+  progress?: string
+  email?: string
+  program_studi?: string
+}
+
+interface StudentProfile {
+  user_id: number
+  idnumber: string
+  full_name: string
+  email: string
+  program_studi: string
+}
+
+interface Filters {
+  course_name: string
+  activity_type: string
+  dosen_pengampu: string
+  sortBy: string
+  sortOrder: "asc" | "desc"
+}
+
+===============================================================================
+
+🎯 **IMPLEMENTATION PRIORITY**
+
+FASE 0 (Authentication & Security - WAJIB PERTAMA):
+1. JWT Authentication middleware
+2. Authorization & role-based access control
+3. Token validation dengan Google Identity Toolkit
+4. Error handling untuk authentication failures
+5. Rate limiting implementation
+
+FASE 1 (Core APIs):
+1. GET /api/courses (dengan authentication)
+2. GET /api/courses/{course_id}/activities (dengan role check)
+3. GET /api/activities/{activity_id}/students (dengan permission check)
+4. GET /api/analytics/dashboard (dengan role-based data filtering)
+
+FASE 2 (Enhanced Features):
+5. GET /api/search (dengan role-based result filtering)
+6. GET /api/filters/options (dengan user context)
+7. GET /api/user/preferences (personal data access)
+8. POST /api/user/preferences (personal data modification)
+
+FASE 3 (Advanced Features):
+9. GET /api/export/courses (dengan export permissions)
+10. GET /api/export/activities/{activity_id}/students (dengan data access rights)
+11. GET /api/analytics/courses/{course_id}/performance (dengan course access rights)
+12. GET /api/dashboard/refresh (dengan cache management)
+
+===============================================================================
+
+📝 **CATATAN PENTING**
+
+1. Semua timestamp menggunakan format ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ)
+2. Pagination menggunakan offset-based pagination
+3. Search menggunakan case-insensitive partial matching
+4. Rate limiting: 100 requests per minute per user
+5. Cache TTL: 5 menit untuk data dinamis, 1 jam untuk data statis
+6. Maximum page size: 100 items per request
+7. File export maksimal 10,000 records per request
+
+🔒 **SECURITY CATATAN KHUSUS JWT:**
+
+8. Token JWT dalam URL harus segera dipindah ke localStorage/sessionStorage
+9. Hapus token dari URL history setelah ekstraksi untuk mencegah token leakage
+10. Implementasi token refresh mechanism sebelum expiry
+11. Validasi token signature menggunakan Google Identity Toolkit public keys
+12. Log semua authentication failures untuk monitoring
+13. Implementasi CORS policy yang restrictive
+14. Gunakan HTTPS untuk semua komunikasi API
+15. Token expiry checking di setiap API call
+16. Automatic logout ketika token expired
+17. Sanitize semua input data untuk mencegah injection attacks
+
+===============================================================================
+
+🧪 **TESTING & SIMULATION URLS**
+
+TEST TOKENS untuk simulasi (Base64 encoded):
+1. STUDENT Token (dcd-135600):
+   eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJkaWNvZGluZy1hdXRoLWludGVncmF0aW9uQGNvZGluZ2NhbXAtZGJzLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwic3ViIjoiZGljb2RpbmctYXV0aC1pbnRlZ3JhdGlvbkBjb2RpbmdjYW1wLWRicy5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsImF1ZCI6Imh0dHBzOi8vaWRlbnRpdHl0b29sa2l0Lmdvb2dsZWFwaXMuY29tL2dvb2dsZS5pZGVudGl0eS5pZGVudGl0eXRvb2xraXQudjEuSWRlbnRpdHlUb29sa2l0IiwiaWF0IjoxNzUxNjAzNjgxLCJleHAiOjE3NTE2MDcyODEsInVpZCI6ImRjZC0xMzU2MDAiLCJjbGFpbXMiOnsiZGljb2RpbmdVc2VySWQiOjEzNTYwMCwidXNlcklkIjoiZmMwMTJkNXkxNjUyIiwicm9sZSI6IlNUVURFTlQifX0.signature
+
+2. INSTRUCTOR Token (dcd-789012):
+   eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJkaWNvZGluZy1hdXRoLWludGVncmF0aW9uQGNvZGluZ2NhbXAtZGJzLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwic3ViIjoiZGljb2RpbmctYXV0aC1pbnRlZ3JhdGlvbkBjb2RpbmdjYW1wLWRicy5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsImF1ZCI6Imh0dHBzOi8vaWRlbnRpdHl0b29sa2l0Lmdvb2dsZWFwaXMuY29tL2dvb2dsZS5pZGVudGl0eS5pZGVudGl0eXRvb2xraXQudjEuSWRlbnRpdHlUb29sa2l0IiwiaWF0IjoxNzUxNjAzNjgxLCJleHAiOjE3NTE2MDcyODEsInVpZCI6ImRjZC03ODkwMTIiLCJjbGFpbXMiOnsiZGljb2RpbmdVc2VySWQiOjc4OTAxMiwidXNlcklkIjoiaW5zdDAwMSIsInJvbGUiOiJJTlNUUlVDVE9SIn19.signature
+
+3. ADMIN Token (dcd-999999):
+   eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJkaWNvZGluZy1hdXRoLWludGVncmF0aW9uQGNvZGluZ2NhbXAtZGJzLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwic3ViIjoiZGljb2RpbmctYXV0aC1pbnRlZ3JhdGlvbkBjb2RpbmdjYW1wLWRicy5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsImF1ZCI6Imh0dHBzOi8vaWRlbnRpdHl0b29sa2l0Lmdvb2dsZWFwaXMuY29tL2dvb2dsZS5pZGVudGl0eS5pZGVudGl0eXRvb2xraXQudjEuSWRlbnRpdHlUb29sa2l0IiwiaWF0IjoxNzUxNjAzNjgxLCJleHAiOjE3NTE2MDcyODEsInVpZCI6ImRjZC05OTk5OTkiLCJjbGFpbXMiOnsiZGljb2RpbmdVc2VySWQiOjk5OTk5OSwidXNlcklkIjoiYWRtaW4wMDEiLCJyb2xlIjoiQURNSU4ifX0.signature
+
+TEST DASHBOARD URLS:
+1. Student Dashboard: 
+   https://your-domain.com/dashboard?token=<STUDENT_TOKEN>
+
+2. Instructor Dashboard:
+   https://your-domain.com/dashboard?token=<INSTRUCTOR_TOKEN>
+
+3. Admin Dashboard:
+   https://your-domain.com/dashboard?token=<ADMIN_TOKEN>
+
+CURL TESTING EXAMPLES:
+
+# Test token validation
+curl -X POST "http://localhost:3000/api/auth/validate-token" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json"
+
+# Test user profile
+curl -X GET "http://localhost:3000/api/auth/user-profile" \
+  -H "Authorization: Bearer <TOKEN>"
+
+# Test courses with student access
+curl -X GET "http://localhost:3000/api/courses?limit=5" \
+  -H "Authorization: Bearer <STUDENT_TOKEN>"
+
+# Test courses with admin access
+curl -X GET "http://localhost:3000/api/courses?limit=20" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+
+# Test analytics (admin only)
+curl -X GET "http://localhost:3000/api/analytics/dashboard" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+
+EXPECTED BEHAVIORS:
+- STUDENT: Hanya bisa akses course yang enrolled (101-106)
+- INSTRUCTOR: Bisa akses course yang diampu (101, 102, 105, 108, 109) + export
+- ADMIN: Akses full ke semua endpoints dan data
+
+TESTING SCENARIOS:
+1. Access with valid token ✓
+2. Access with expired token ✗
+3. Access with malformed token ✗
+4. Access without token ✗
+5. Student accessing admin endpoint ✗
+6. Instructor accessing other instructor's courses ✗
+7. Token refresh before expiry ✓
+8. Automatic logout on token expiry ✓
+
+===============================================================================
+                                    END OF DOCUMENT
+=============================================================================== 
