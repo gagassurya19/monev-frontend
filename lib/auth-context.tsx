@@ -260,6 +260,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshAuth,
   };
 
+  // Don't render children until authentication check is complete
+  if (authState.isLoading) {
+    return (
+      <AuthContext.Provider value={contextValue}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            {/* Simple spinner */}
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            
+            {/* Minimal text */}
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                Memverifikasi autentikasi
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Mohon tunggu...
+              </p>
+            </div>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
+  }
+
   return (
     <AuthContext.Provider value={contextValue}>
       {children}

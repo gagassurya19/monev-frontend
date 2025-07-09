@@ -798,7 +798,7 @@ export default function OptimizedDashboard() {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Logs LMS</h1>
+                <h1 className="text-2xl font-bold text-gray-900">MONEV</h1>
                 <p className="text-sm text-gray-600">Telkom University</p>
               </div>
             </div>
@@ -807,7 +807,7 @@ export default function OptimizedDashboard() {
         
         <div className="p-6 space-y-6">
           {/* Loading Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-6">
@@ -821,7 +821,7 @@ export default function OptimizedDashboard() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </div> */}
           
           {/* Loading Table */}
           <Card>
@@ -862,8 +862,8 @@ export default function OptimizedDashboard() {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Logs LMS</h1>
-                <p className="text-sm text-gray-600">Telkom University</p>
+                <h1 className="text-2xl font-bold text-gray-900">MONEV</h1>
+                <p className="text-sm text-gray-600">CeLOE Monitoring System</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">

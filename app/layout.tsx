@@ -4,25 +4,25 @@ import { AuthProvider } from '@/lib/auth-context'
 import { AuthGuard } from '@/components/auth-guard'
 
 export const metadata: Metadata = {
-  title: "CeLOE Logs",
-  description: "A logging system for CeLOE",
+  title: "MONEV",
+  description: "CeLOE Monitoring System",
   authors: [{ name: "Gagas Surya Laksana", url: "https://gagas.me" }],
   icons: {
     icon: '/icon.ico',
   },
   openGraph: {
-    title: "CeLOE Logs",
-    description: "A logging system for CeLOE",
-    siteName: "CeLOE Logs",
+    title: "MONEV",
+    description: "CeLOE Monitoring System",
+    siteName: "MONEV",
     images: [
       {
-        url: "/celoe-logo.png",
+        url: "/monev-logo.png",
         width: 800,
         height: 600,
-        alt: "CeLOE Logo",
+        alt: "MONEV Logo",
       },
     ],
-    locale: "en_US",
+    locale: "id_ID",
     type: "website",
   },
 };
@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body>
         <AuthProvider>
           <AuthGuard>
