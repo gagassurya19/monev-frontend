@@ -10,6 +10,7 @@ import {
   StudentsFilters,
   ApiError
 } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import ClientDate from "@/components/ClientDate"
 import { Button } from "@/components/ui/button"
@@ -49,6 +50,8 @@ import {
   Star,
   X,
   LogOut,
+  Shield,
+  User,
 } from "lucide-react"
 
 // Database schema interfaces - matching real database structure
@@ -286,6 +289,9 @@ const EmptyStudentsState = () => (
 )
 
 export default function OptimizedDashboard() {
+  // Auth state
+  const { user, signOut } = useAuth()
+  
   // Loading states
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -865,10 +871,32 @@ export default function OptimizedDashboard() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              
+              {/* User Info */}
+              {user && (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0">
+                      <User className="h-6 w-6 text-blue-600 bg-blue-100 rounded-full p-1" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {user.name || user.username}
+                      </p>
+                    </div>
+                    {user.admin && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Shield className="w-3 h-3 mr-1" />
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={signOut} className="text-red-600 hover:text-red-700">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

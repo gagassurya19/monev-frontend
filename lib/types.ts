@@ -128,4 +128,30 @@ export interface ErrorResponse {
   error: ApiError;
   timestamp: string;
   request_id?: string;
+}
+
+// JWT Authentication types
+export interface JWTPayload {
+  sub: string      // username
+  name?: string    // name  
+  admin?: boolean  // admin flag
+  exp: number      // expiration timestamp
+  iat?: number     // issued at
+}
+
+export interface AuthState {
+  isAuthenticated: boolean
+  user: {
+    username: string
+    name?: string
+    admin?: boolean
+  } | null
+  token: string | null
+  isLoading: boolean
+  error: string | null
+}
+
+export interface AuthContextType extends AuthState {
+  signOut: () => void
+  refreshAuth: () => void
 } 
