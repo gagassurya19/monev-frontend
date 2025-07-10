@@ -234,17 +234,7 @@ const usePagination = (totalItems: number, itemsPerPage = 10) => {
   }
 }
 
-// Debounced search hook
-const useDebounce = (value: string, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value)
 
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(handler)
-  }, [value, delay])
-
-  return debouncedValue
-}
 
 // Skeleton components
 const SkeletonTableRow = () => (
@@ -327,7 +317,8 @@ export default function OptimizedDashboard() {
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(new Set())
 
   // Search and filter states
-  const [globalSearch, setGlobalSearch] = useState("")
+  const [searchInput, setSearchInput] = useState("") // For input field value
+  const [globalSearch, setGlobalSearch] = useState("") // For actual search that triggers fetch
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [filters, setFilters] = useState<Filters>({
     course_name: "all",
@@ -336,9 +327,6 @@ export default function OptimizedDashboard() {
     sortBy: "course_name",
     sortOrder: "asc"
   })
-
-  // Debounced search values
-  const debouncedGlobalSearch = useDebounce(globalSearch, 300)
 
   // API-based data states
   const [coursesData, setCoursesData] = useState<{
@@ -394,7 +382,7 @@ export default function OptimizedDashboard() {
       setError(null)
 
       try {
-        const response = await loadCoursesData(currentPage, itemsPerPage, debouncedGlobalSearch, filters)
+        const response = await loadCoursesData(currentPage, itemsPerPage, globalSearch, filters)
         setCoursesData({
           courses: response.data,
           pagination: response.pagination,
@@ -418,7 +406,7 @@ export default function OptimizedDashboard() {
     }
 
     loadInitialData()
-  }, [debouncedGlobalSearch, filters, currentPage, itemsPerPage])
+  }, [globalSearch, filters, currentPage, itemsPerPage])
 
   // Computed stats from API data
   const stats = useMemo(() => {
@@ -484,6 +472,16 @@ export default function OptimizedDashboard() {
     }
   }, [recentSearches])
 
+  const executeSearch = useCallback(() => {
+    handleSearch(searchInput)
+  }, [searchInput, handleSearch])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      executeSearch()
+    }
+  }, [executeSearch])
+
   // Handle pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -495,6 +493,12 @@ export default function OptimizedDashboard() {
     setCurrentPage(1) // Reset to first page when changing items per page
   }
 
+  const clearSearch = useCallback(() => {
+    setSearchInput("")
+    setGlobalSearch("")
+    setCurrentPage(1) // Reset to first page when clearing search
+  }, [])
+
   const clearFilters = useCallback(() => {
     setFilters({
       course_name: "all",
@@ -503,6 +507,7 @@ export default function OptimizedDashboard() {
       sortBy: "course_name",
       sortOrder: "asc"
     })
+    setSearchInput("")
     setGlobalSearch("")
     setCurrentPage(1) // Reset to first page when clearing filters
   }, [])
@@ -517,7 +522,7 @@ export default function OptimizedDashboard() {
       setExpandedCourses(new Set())
 
       // Reload courses data with current pagination
-      const response = await loadCoursesData(currentPage, itemsPerPage, debouncedGlobalSearch, filters)
+      const response = await loadCoursesData(currentPage, itemsPerPage, globalSearch, filters)
       setCoursesData({
         courses: response.data,
         pagination: response.pagination,
@@ -540,7 +545,7 @@ export default function OptimizedDashboard() {
     } finally {
       setIsRefreshing(false)
     }
-  }, [debouncedGlobalSearch, filters, currentPage, itemsPerPage])
+  }, [globalSearch, filters, currentPage, itemsPerPage])
 
   // Utility functions
   const getActivityIcon = (type: string) => {
@@ -1003,25 +1008,46 @@ export default function OptimizedDashboard() {
                 <Badge variant="secondary" className="bg-white text-teal-700 hover:bg-white text-sm">
                   {totalItems} mata kuliah
                 </Badge>
-                {(filters.course_name !== "all" || filters.dosen_pengampu !== "all" || filters.activity_type !== "all" || globalSearch) && (
+                {/* {(filters.course_name !== "all" || filters.dosen_pengampu !== "all" || filters.activity_type !== "all" || globalSearch) && (
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="text-white hover:bg-teal-600 hover:text-white ml-2">
                     <X className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">Clear</span>
                   </Button>
-                )}
+                )} */}
               </div>
             </CardTitle>
 
             {/* Search Bar */}
             <div className="pt-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Cari mata kuliah, dosen, atau kelas..."
-                  value={globalSearch}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 bg-white text-gray-900"
-                />
+              <div className="relative flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Cari mata kuliah, dosen, atau kelas... (Enter untuk cari)"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pl-10 pr-10 bg-white text-gray-900 focus-visible:ring-0 h-10"
+                  />
+                  {(searchInput || globalSearch) && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors"
+                      type="button"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  onClick={executeSearch}
+                  className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4"
+                  size="default"
+                >
+                  <Search className="w-4 h-4 mr-2" strokeWidth={3}/>
+                  Cari
+                </Button>
               </div>
             </div>
           </CardHeader>

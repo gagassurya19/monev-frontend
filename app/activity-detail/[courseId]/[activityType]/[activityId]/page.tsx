@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getCourseActivities, getActivityStudents } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -124,7 +124,8 @@ export default function ActivityDetailPage() {
     const [students, setStudents] = useState<ExtendedStudentData[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [searchTerm, setSearchTerm] = useState("")
+    const [searchInput, setSearchInput] = useState("") // For input field value
+    const [searchTerm, setSearchTerm] = useState("") // For actual search that triggers fetch
     const [filterType, setFilterType] = useState("all")
     const [sortBy, setSortBy] = useState("full_name")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
@@ -535,11 +536,23 @@ export default function ActivityDetailPage() {
         }
     }
 
-    // Handle search with debouncing to avoid too many API calls
-    const handleSearchChange = (value: string) => {
-        setSearchTerm(value)
+    // Handle search execution
+    const executeSearch = useCallback(() => {
+        setSearchTerm(searchInput)
         setCurrentPage(1) // Reset to first page on search
-    }
+    }, [searchInput])
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            executeSearch()
+        }
+    }, [executeSearch])
+
+    const clearSearch = useCallback(() => {
+        setSearchInput("")
+        setSearchTerm("")
+        setCurrentPage(1) // Reset to first page when clearing search
+    }, [])
 
     // Handle pagination
     const handlePageChange = (page: number) => {
@@ -857,14 +870,35 @@ export default function ActivityDetailPage() {
 
                         {/* Search Bar */}
                         <div className="pt-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input
-                                    placeholder="Cari nama atau NIM mahasiswa..."
-                                    value={searchTerm}
-                                    onChange={(e) => handleSearchChange(e.target.value)}
-                                    className="pl-10 bg-white text-gray-900"
-                                />
+                            <div className="relative flex gap-2 items-center">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Input
+                                        placeholder="Cari nama atau NIM mahasiswa... (Enter untuk cari)"
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="pl-10 pr-10 bg-white text-gray-900 focus-visible:ring-0 h-10"
+                                    />
+                                    {(searchInput || searchTerm) && (
+                                        <button
+                                            onClick={clearSearch}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors"
+                                            type="button"
+                                            aria-label="Clear search"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={executeSearch}
+                                    className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4"
+                                    size="default"
+                                >
+                                    <Search className="w-4 h-4 mr-2" strokeWidth={3}/>
+                                    Cari
+                                </Button>
                             </div>
                         </div>
                     </CardHeader>
