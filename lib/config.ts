@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   COURSES: '/api/courses',
   COURSE_ACTIVITIES: (courseId: number) => `/api/courses/${courseId}/activities`,
   ACTIVITY_STUDENTS: (activityId: number) => `/api/activities/${activityId}/students`,
+  ETL_STATUS: '/api/ETL/status',
   AUTH: {
     VALIDATE_TOKEN: '/api/auth/validate-token',
     USER_PROFILE: '/api/auth/user-profile',

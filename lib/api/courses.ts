@@ -48,6 +48,7 @@ export async function getCourseActivities(
       page: filters.page || 1,
       limit: filters.limit || 20,
       ...(filters.activity_type && { activity_type: filters.activity_type }),
+      ...(filters.activity_id && { activity_id: filters.activity_id }),
       ...(filters.section && { section: filters.section }),
     };
 

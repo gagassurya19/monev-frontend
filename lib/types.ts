@@ -102,6 +102,7 @@ export interface CoursesFilters {
 
 export interface ActivitiesFilters {
   activity_type?: 'resource' | 'assign' | 'quiz';
+  activity_id?: number;
   section?: number;
   page?: number;
   limit?: number;
