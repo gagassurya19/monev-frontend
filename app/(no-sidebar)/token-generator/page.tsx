@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { JWTGenerator } from '@/lib/jwt-generator';
+import { AppHeader } from '@/components/app-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,8 +63,16 @@ export default function TokenGeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="flex flex-col min-h-screen">
+      <AppHeader 
+        title="Token Generator" 
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Token Generator" }
+        ]}
+      />
+      <main className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card>
           <CardHeader className="text-center">
@@ -118,6 +127,7 @@ export default function TokenGeneratorPage() {
                     <SelectItem value="10">10 minutes</SelectItem>
                     <SelectItem value="30">30 minutes</SelectItem>
                     <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="525600">1 tahun</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -300,7 +310,8 @@ export default function TokenGeneratorPage() {
             </CardContent>
           </Card>
         )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 } 

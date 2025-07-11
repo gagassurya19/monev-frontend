@@ -12,6 +12,7 @@ import {
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { API_CONFIG, API_ENDPOINTS } from "@/lib/config"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import ClientDate from "@/components/ClientDate"
 import { Button } from "@/components/ui/button"
@@ -63,7 +64,10 @@ import {
   Shield,
   User,
   Hash,
+  Home,
 } from "lucide-react"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb"
 
 // Database schema interfaces - matching real database structure
 interface Course {
@@ -785,57 +789,33 @@ export default function OptimizedDashboard() {
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <Breadcrumb className="items-center gap-2 hidden sm:flex">
+                <BreadcrumbItem className="flex items-center">
+                  <BreadcrumbLink href="/" className="flex items-center gap-2">
+                    <Home className="w-4 h-4" strokeWidth={3}/>
+                    <span className="text-sm font-medium">Dashboard</span>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </Breadcrumb>
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1 sm:hidden" />
+                <Separator orientation="vertical" className="block sm:hidden h-6" />
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">MONEV</h1>
-                <p className="text-sm text-gray-600 hidden sm:block">CeLOE Monitoring System</p>
-              </div>
+              
+              <div className="sm:hidden flex items-center">
+                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 ml-2">MONEV</h1>
+                </div>
+                  </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing} className="px-3 py-2">
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''} sm:mr-2`} />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
-
-              {/* User Info */}
-              {user && (
-                <div className="flex items-center space-x-2">
-                  {/* Desktop User Info */}
-                  <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0">
-                      <User className="h-6 w-6 text-blue-600 bg-blue-100 rounded-full p-1" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name || user.username}
-                      </p>
-                    </div>
-                    {user.admin && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Shield className="w-3 h-3 mr-1" />
-                        Admin
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Mobile User Info */}
-                  <div className="sm:hidden flex items-center">
-                    <User className="h-8 w-8 text-blue-600 bg-blue-100 rounded-full p-1" />
-                    {user.admin && (
-                      <Badge variant="secondary" className="text-xs ml-1">
-                        <Shield className="w-3 h-3" />
-                      </Badge>
-                    )}
-                  </div>
-
-                  <Button variant="outline" size="sm" onClick={signOut} className="text-red-600 hover:text-red-700 px-3 py-2">
-                    <LogOut className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Logout</span>
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </div>

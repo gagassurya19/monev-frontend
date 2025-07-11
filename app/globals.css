@@ -10,6 +10,27 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Enhanced responsive table handling */
+  .table-responsive {
+    @apply min-w-full;
+  }
+  
+  .table-cell-responsive {
+    @apply break-words overflow-hidden;
+  }
+  
+  /* Ensure proper text wrapping in small screens */
+  .wrap-anywhere {
+    overflow-wrap: anywhere;
+  }
+  
+  /* Better mobile card spacing */
+  .mobile-card-spacing {
+    @apply space-y-3 p-4;
+  }
+  
+
 }
 
 @layer base {

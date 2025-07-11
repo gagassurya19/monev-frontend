@@ -51,6 +51,8 @@ import {
     Award,
     X,
 } from "lucide-react"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+
 
 // Types
 interface ActivitySummary {
@@ -699,51 +701,41 @@ export default function ActivityDetailPage() {
                 <div className="px-4 sm:px-6 py-4">
                     {/* Desktop Layout */}
                     <div className="hidden lg:flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.replace('/')}
-                                className="text-gray-600 hover:text-gray-900"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Beranda
-                            </Button>
-                            <Separator orientation="vertical" className="h-6" />
-                            <div>
+                        <div className="flex items-center space-x-4 min-w-0 flex-1">
+                            <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-3 mb-1">
-                                    <h1 className="text-2xl font-bold text-gray-900">
+                                    <h1 className="text-2xl font-bold text-gray-900 truncate">
                                         {activity.activity_name}
                                     </h1>
-                                    <Badge className={`${getActivityColor(activity.activity_type)} border text-sm`}>
+                                    <Badge className={`${getActivityColor(activity.activity_type)} border text-sm flex-shrink-0 max-w-[100px]`}>
                                         {getActivityIcon(activity.activity_type)}
                                         {activity.activity_type}
                                     </Badge>
                                 </div>
 
                                 {/* Course Information */}
-                                <div className="flex items-center space-x-3 mb-2">
+                                <div className="flex items-center space-x-3 mb-2 text-sm">
                                     {courseInfo ? (
                                         <>
-                                            <span className="text-base font-medium text-gray-700">
+                                            <span className="font-medium text-gray-700 truncate">
                                                 {courseInfo.course_name}
                                             </span>
-                                            <span className="text-sm text-gray-500">•</span>
-                                            <span className="text-sm text-blue-600 font-medium">
+                                            <span className="text-gray-500 flex-shrink-0">•</span>
+                                            <span className="text-blue-600 font-medium flex-shrink-0">
                                                 {courseInfo.kelas}
                                             </span>
-                                            <span className="text-sm text-gray-500">•</span>
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-gray-500 flex-shrink-0">•</span>
+                                            <span className="text-gray-500 flex-shrink-0">
                                                 Section {activity.section}
                                             </span>
                                         </>
                                     ) : (
                                         <>
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-gray-500">
                                                 Course ID: {courseId}
                                             </span>
-                                            <span className="text-sm text-gray-500">•</span>
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-gray-500">•</span>
+                                            <span className="text-gray-500">
                                                 Section {activity.section}
                                             </span>
                                         </>
@@ -751,7 +743,7 @@ export default function ActivityDetailPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-shrink-0">
                             <Button variant="outline" size="sm" onClick={handleRefresh}>
                                 <RefreshCw className="w-4 h-4 mr-2" />
                                 Refresh
@@ -760,63 +752,52 @@ export default function ActivityDetailPage() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className="lg:hidden space-y-4">
-                        {/* Top Row - Navigation */}
+                    <div className="lg:hidden space-y-3">
                         <div className="flex items-center justify-between">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.replace('/')}
-                                className="text-gray-600 hover:text-gray-900"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Beranda
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                                <SidebarTrigger className="-ml-1" />
+                                <Separator orientation="vertical" className="h-4" />
+                            </div>
+
+                            {/* Course Information */}
+                            <div className="flex-1 px-2 min-w-0">
+                                <div className="text-xs text-gray-600">
+                                    {courseInfo ? (
+                                        <div className="text-center">
+                                            <div className="font-medium text-gray-700 truncate">
+                                                {courseInfo.course_name}
+                                            </div>
+                                            <div className="flex items-center justify-center space-x-1">
+                                                <span className="text-blue-600 font-medium">
+                                                    {courseInfo.kelas}
+                                                </span>
+                                                <span>•</span>
+                                                <span>Section {activity.section}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center">
+                                            <div>Course ID: {courseId}</div>
+                                            <div>Section {activity.section}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <Button variant="outline" size="sm" onClick={handleRefresh}>
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Refresh
+                                <RefreshCw className="w-4 h-4" />
                             </Button>
                         </div>
 
-                        {/* Activity Title */}
                         <div className="space-y-2">
-                            <div className="flex flex-row items-center gap-2">
-                                <Badge className={`${getActivityColor(activity.activity_type)} border text-sm self-start`}>
+                            <div className="flex justify-between">
+                                <h1 className="text-lg font-bold text-gray-900 truncate flex-1 max-w-[300px]">
+                                    {activity.activity_name}
+                                </h1>
+                                <Badge className={`${getActivityColor(activity.activity_type)} border text-xs flex-shrink-0`}>
                                     {getActivityIcon(activity.activity_type)}
                                     {activity.activity_type}
                                 </Badge>
-                                <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
-                                    {activity.activity_name}
-                                </h1>
-                            </div>
-
-                            {/* Course Information - Mobile */}
-                            <div className="space-y-1 text-sm">
-                                {courseInfo ? (
-                                    <>
-                                        <div className="flex items-center gap-3">
-                                            <div className="font-medium text-gray-700">
-                                                {courseInfo.course_name}
-                                            </div>
-                                            <span className="text-blue-600 font-medium">
-                                                {courseInfo.kelas}
-                                            </span>
-                                            <span className="text-gray-500">•</span>
-                                            <span className="text-gray-500">
-                                                Section {activity.section}
-                                            </span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="text-gray-500">
-                                            Course ID: {courseId}
-                                        </div>
-                                        <div className="text-gray-500">
-                                            Section {activity.section}
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -831,12 +812,14 @@ export default function ActivityDetailPage() {
 
                 {/* Simple Data Update Info */}
                 {etlStatus && (
-                    <div className="bg-gray-50 rounded-lg text-sm">
+                    <div className="bg-gray-50 rounded-lg p-3 text-sm">
                         <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span>Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} /></span>
+                            <Clock className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate">
+                                Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} />
+                            </span>
                             {etlStatus.data.isRunning && (
-                                <div className="flex items-center gap-1 ml-2">
+                                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                                     <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
                                     <span className="text-blue-600 text-xs">Updating...</span>
                                 </div>
@@ -848,33 +831,13 @@ export default function ActivityDetailPage() {
                 {/* Student Data Table */}
                 <Card>
                     <CardHeader className="bg-teal-700 text-white">
-                        <CardTitle className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-                            <span className="text-lg sm:text-xl">
-                                {courseInfo ? (
-                                    <>Data Mahasiswa - {activity.activity_name}</>
-                                ) : (
-                                    <>Data Mahasiswa Aktivitas</>
-                                )}
-                            </span>
-                            <div className="flex items-center justify-between sm:space-x-2">
-                                <Badge variant="secondary" className="bg-white text-teal-700 hover:bg-white text-sm">
-                                    {totalItems || filteredAndSortedStudents.length} mahasiswa
-                                </Badge>
-                                {courseInfo && (
-                                    <Badge variant="outline" className="bg-teal-600 text-white border-white hover:bg-teal-600 text-sm ml-2">
-                                        {courseInfo.course_name} ({courseInfo.kelas})
-                                    </Badge>
-                                )}
-                            </div>
-                        </CardTitle>
-
                         {/* Search Bar */}
                         <div className="pt-3">
-                            <div className="relative flex gap-2 items-center">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <div className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <Input
-                                        placeholder="Cari nama atau NIM mahasiswa... (Enter untuk cari)"
+                                        placeholder="Cari nama atau NIM mahasiswa..."
                                         value={searchInput}
                                         onChange={(e) => setSearchInput(e.target.value)}
                                         onKeyDown={handleKeyDown}
@@ -893,155 +856,156 @@ export default function ActivityDetailPage() {
                                 </div>
                                 <Button
                                     onClick={executeSearch}
-                                    className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4"
+                                    className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4 flex-shrink-0"
                                     size="default"
                                 >
-                                    <Search className="w-4 h-4 mr-2" strokeWidth={3}/>
-                                    Cari
+                                    <Search className="w-4 h-4 sm:mr-2" strokeWidth={3} />
+                                    <span className="hidden sm:inline">Cari</span>
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        {/* Responsive Table */}
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
+                        <Table className="w-full table-auto">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="text-center px-2 sm:px-4">No</TableHead>
+                                    <TableHead className="px-2 sm:px-4">
+                                        <button
+                                            onClick={() => handleSort("full_name")}
+                                            className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
+                                        >
+                                            Student
+                                            {sortBy === "full_name" && (
+                                                <span className="text-xs">
+                                                    {sortOrder === "asc" ? "↑" : "↓"}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead className="px-2 sm:px-4">
+                                        <button
+                                            onClick={() => handleSort("waktu_aktivitas")}
+                                            className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
+                                        >
+                                            Activity Details
+                                            {sortBy === "waktu_aktivitas" && (
+                                                <span className="text-xs">
+                                                    {sortOrder === "asc" ? "↑" : "↓"}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead className="px-2 sm:px-4 text-xs sm:text-sm">Performance</TableHead>
+                                    <TableHead className="text-right px-2 sm:px-4">
+                                        <button
+                                            onClick={() => handleSort("nilai")}
+                                            className="flex items-center gap-1 hover:text-gray-300 transition-colors ml-auto text-xs sm:text-sm"
+                                        >
+                                            Score
+                                            {sortBy === "nilai" && (
+                                                <span className="text-xs">
+                                                    {sortOrder === "asc" ? "↑" : "↓"}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredAndSortedStudents.length === 0 ? (
                                     <TableRow>
-                                        <TableHead className="w-[60px] text-center">No</TableHead>
-                                        <TableHead className="min-w-[200px]">
-                                            <button
-                                                onClick={() => handleSort("full_name")}
-                                                className="flex items-center gap-1 hover:text-gray-300 transition-colors"
-                                            >
-                                                Student
-                                                {sortBy === "full_name" && (
-                                                    <span className="text-xs">
-                                                        {sortOrder === "asc" ? "↑" : "↓"}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </TableHead>
-                                        <TableHead className="min-w-[250px]">
-                                            <button
-                                                onClick={() => handleSort("waktu_aktivitas")}
-                                                className="flex items-center gap-1 hover:text-gray-300 transition-colors"
-                                            >
-                                                Activity Details
-                                                {sortBy === "waktu_aktivitas" && (
-                                                    <span className="text-xs">
-                                                        {sortOrder === "asc" ? "↑" : "↓"}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </TableHead>
-                                        <TableHead className="min-w-[180px]">Performance</TableHead>
-                                        <TableHead className="text-right min-w-[100px]">
-                                            <button
-                                                onClick={() => handleSort("nilai")}
-                                                className="flex items-center gap-1 hover:text-gray-300 transition-colors ml-auto"
-                                            >
-                                                Score
-                                                {sortBy === "nilai" && (
-                                                    <span className="text-xs">
-                                                        {sortOrder === "asc" ? "↑" : "↓"}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </TableHead>
+                                        <TableCell colSpan={5} className="text-center py-8">
+                                            <div className="text-gray-500">
+                                                <Users className="w-8 h-8 mx-auto mb-2" />
+                                                <p className="font-medium">Tidak ada data mahasiswa</p>
+                                                <p className="text-sm">Tidak ada mahasiswa yang ditemukan atau belum ada aktivitas</p>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredAndSortedStudents.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8">
-                                                <div className="text-gray-500">
-                                                    <Users className="w-8 h-8 mx-auto mb-2" />
-                                                    <p className="font-medium">Tidak ada data mahasiswa</p>
-                                                    <p className="text-sm">Tidak ada mahasiswa yang ditemukan atau belum ada aktivitas</p>
+                                ) : (
+                                    filteredAndSortedStudents.map((student, index) => (
+                                        <TableRow key={`${courseId}-${activityId}-${student.user_id}-${student.nim}-${index}`} className="hover:bg-gray-50">
+                                            <TableCell className="p-2 sm:p-4 text-center">
+                                                <div className="font-medium text-xs sm:text-sm text-gray-600">
+                                                    {((currentPage - 1) * itemsPerPage) + index + 1}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-2 sm:p-4">
+                                                <div className="space-y-1">
+                                                    <div className="font-medium text-xs sm:text-sm">{student.full_name}</div>
+                                                    <div className="text-xs text-gray-500">{student.nim}</div>
+                                                    {student.program_studi && (
+                                                        <div className="text-xs text-blue-600">{student.program_studi}</div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-2 sm:p-4">
+                                                <div className="space-y-1 sm:space-y-2 text-xs">
+                                                    <div className="flex items-center gap-1">
+                                                        <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                                        <span>
+                                                            <ClientDate dateString={student.waktu_aktivitas} />
+                                                        </span>
+                                                    </div>
+                                                    {student.durasi_pengerjaan && (
+                                                        <div className="flex items-center gap-1 text-gray-500">
+                                                            <Clock className="w-3 h-3 flex-shrink-0" />
+                                                            <span>Duration: {student.durasi_pengerjaan}</span>
+                                                        </div>
+                                                    )}
+                                                    {(student as any).waktu_selesai && (
+                                                        <div className="flex items-center gap-1 text-green-600">
+                                                            <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                                                            <span>Finished: <ClientDate dateString={(student as any).waktu_selesai} /></span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-2 sm:p-4">
+                                                <div className="space-y-1 text-xs">
+                                                    {activity.activity_type.toLowerCase() === 'quiz' && (
+                                                        <>
+                                                            {(student as any).jumlah_dikerjakan && (student as any).jumlah_soal && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <Target className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                                                                    <span>
+                                                                        {(student as any).jumlah_dikerjakan}/{(student as any).jumlah_soal} soal
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    {student.progress && (
+                                                        <div className="text-gray-500">{student.progress}</div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right p-2 sm:p-4">
+                                                <div className="flex justify-end">
+                                                    {student.nilai !== undefined && student.nilai !== null ? (
+                                                        <Badge
+                                                            variant={getScoreBadgeVariant(Number(student.nilai))}
+                                                            className="text-xs"
+                                                        >
+                                                            <Award className="w-3 h-3 mr-1" />
+                                                            <span className="hidden sm:inline">{Number(student.nilai).toFixed(2)}</span>
+                                                            <span className="sm:hidden">{Number(student.nilai).toFixed(1)}</span>
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            <span className="hidden sm:inline">Pending</span>
+                                                            <span className="sm:hidden">-</span>
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
-                                    ) : (
-                                        filteredAndSortedStudents.map((student, index) => (
-                                            <TableRow key={`${courseId}-${activityId}-${student.user_id}-${student.nim}-${index}`} className="hover:bg-gray-50">
-                                                <TableCell className="p-3 sm:p-4 text-center">
-                                                    <div className="font-medium text-sm text-gray-600">
-                                                        {((currentPage - 1) * itemsPerPage) + index + 1}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="p-3 sm:p-4">
-                                                    <div className="space-y-1">
-                                                        <div className="font-medium text-sm sm:text-base">{student.full_name}</div>
-                                                        <div className="text-xs sm:text-sm text-gray-500">{student.nim}</div>
-                                                        {student.program_studi && (
-                                                            <div className="text-xs text-blue-600">{student.program_studi}</div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="p-3 sm:p-4">
-                                                    <div className="space-y-2 text-xs sm:text-sm">
-                                                        <div className="flex items-center gap-1">
-                                                            <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                                                            <ClientDate dateString={student.waktu_aktivitas} />
-                                                        </div>
-                                                        {student.durasi_pengerjaan && (
-                                                            <div className="flex items-center gap-1 text-gray-500">
-                                                                <Clock className="w-3 h-3 flex-shrink-0" />
-                                                                <span className="truncate">Duration: {student.durasi_pengerjaan}</span>
-                                                            </div>
-                                                        )}
-                                                        {(student as any).waktu_selesai && (
-                                                            <div className="flex items-center gap-1 text-green-600">
-                                                                <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                                                                <span className="truncate">Finished: <ClientDate dateString={(student as any).waktu_selesai} /></span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="p-3 sm:p-4">
-                                                    <div className="space-y-1 text-xs sm:text-sm">
-                                                        {activity.activity_type.toLowerCase() === 'quiz' && (
-                                                            <>
-                                                                {(student as any).jumlah_dikerjakan && (student as any).jumlah_soal && (
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Target className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                                                                        <span className="truncate">
-                                                                            {(student as any).jumlah_dikerjakan}/{(student as any).jumlah_soal} soal
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                        {student.progress && (
-                                                            <div className="text-gray-500 truncate">{student.progress}</div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right p-3 sm:p-4">
-                                                    <div className="flex justify-end">
-                                                        {student.nilai !== undefined && student.nilai !== null ? (
-                                                            <Badge
-                                                                variant={getScoreBadgeVariant(Number(student.nilai))}
-                                                                className="text-xs sm:text-sm"
-                                                            >
-                                                                <Award className="w-3 h-3 mr-1" />
-                                                                {Number(student.nilai).toFixed(2)}
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline" className="text-xs sm:text-sm">
-                                                                Pending
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
 
                         {/* Pagination Controls */}
                         <div className="p-4 border-t">
@@ -1064,19 +1028,25 @@ export default function ActivityDetailPage() {
                                         </SelectContent>
                                     </Select>
                                     <span className="text-sm text-gray-700">
-                                        per halaman
+                                        <span className="hidden sm:inline">per halaman</span>
+                                        <span className="sm:hidden">/hal</span>
                                     </span>
                                 </div>
 
                                 {/* Pagination info */}
-                                <div className="text-sm text-gray-700">
-                                    Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} mahasiswa
+                                <div className="text-sm text-gray-700 text-center">
+                                    <span className="hidden sm:inline">
+                                        Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} mahasiswa
+                                    </span>
+                                    <span className="sm:hidden">
+                                        {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems}
+                                    </span>
                                 </div>
 
                                 {/* Pagination controls */}
                                 {totalPages > 1 && (
                                     <Pagination>
-                                        <PaginationContent>
+                                        <PaginationContent className="flex-wrap gap-1">
                                             <PaginationItem>
                                                 <PaginationPrevious
                                                     href="#"
@@ -1084,26 +1054,27 @@ export default function ActivityDetailPage() {
                                                         e.preventDefault()
                                                         if (currentPage > 1) handlePageChange(currentPage - 1)
                                                     }}
-                                                    className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                                                    className={`${currentPage <= 1 ? "pointer-events-none opacity-50" : ""} text-xs sm:text-sm px-2 sm:px-3`}
                                                 />
                                             </PaginationItem>
 
                                             {/* First page */}
                                             {currentPage > 2 && (
                                                 <>
-                                                    <PaginationItem>
+                                                    <PaginationItem className="hidden sm:block">
                                                         <PaginationLink
                                                             href="#"
                                                             onClick={(e) => {
                                                                 e.preventDefault()
                                                                 handlePageChange(1)
                                                             }}
+                                                            className="text-xs sm:text-sm px-2 sm:px-3"
                                                         >
                                                             1
                                                         </PaginationLink>
                                                     </PaginationItem>
                                                     {currentPage > 3 && (
-                                                        <PaginationItem>
+                                                        <PaginationItem className="hidden sm:block">
                                                             <PaginationEllipsis />
                                                         </PaginationItem>
                                                     )}
@@ -1112,13 +1083,14 @@ export default function ActivityDetailPage() {
 
                                             {/* Previous page */}
                                             {currentPage > 1 && (
-                                                <PaginationItem>
+                                                <PaginationItem className="hidden sm:block">
                                                     <PaginationLink
                                                         href="#"
                                                         onClick={(e) => {
                                                             e.preventDefault()
                                                             handlePageChange(currentPage - 1)
                                                         }}
+                                                        className="text-xs sm:text-sm px-2 sm:px-3"
                                                     >
                                                         {currentPage - 1}
                                                     </PaginationLink>
@@ -1131,6 +1103,7 @@ export default function ActivityDetailPage() {
                                                     href="#"
                                                     isActive
                                                     onClick={(e) => e.preventDefault()}
+                                                    className="text-xs sm:text-sm px-2 sm:px-3"
                                                 >
                                                     {currentPage}
                                                 </PaginationLink>
@@ -1138,13 +1111,14 @@ export default function ActivityDetailPage() {
 
                                             {/* Next page */}
                                             {currentPage < totalPages && (
-                                                <PaginationItem>
+                                                <PaginationItem className="hidden sm:block">
                                                     <PaginationLink
                                                         href="#"
                                                         onClick={(e) => {
                                                             e.preventDefault()
                                                             handlePageChange(currentPage + 1)
                                                         }}
+                                                        className="text-xs sm:text-sm px-2 sm:px-3"
                                                     >
                                                         {currentPage + 1}
                                                     </PaginationLink>
@@ -1155,17 +1129,18 @@ export default function ActivityDetailPage() {
                                             {currentPage < totalPages - 1 && (
                                                 <>
                                                     {currentPage < totalPages - 2 && (
-                                                        <PaginationItem>
+                                                        <PaginationItem className="hidden sm:block">
                                                             <PaginationEllipsis />
                                                         </PaginationItem>
                                                     )}
-                                                    <PaginationItem>
+                                                    <PaginationItem className="hidden sm:block">
                                                         <PaginationLink
                                                             href="#"
                                                             onClick={(e) => {
                                                                 e.preventDefault()
                                                                 handlePageChange(totalPages)
                                                             }}
+                                                            className="text-xs sm:text-sm px-2 sm:px-3"
                                                         >
                                                             {totalPages}
                                                         </PaginationLink>
@@ -1180,7 +1155,7 @@ export default function ActivityDetailPage() {
                                                         e.preventDefault()
                                                         if (currentPage < totalPages) handlePageChange(currentPage + 1)
                                                     }}
-                                                    className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                                                    className={`${currentPage >= totalPages ? "pointer-events-none opacity-50" : ""} text-xs sm:text-sm px-2 sm:px-3`}
                                                 />
                                             </PaginationItem>
                                         </PaginationContent>
