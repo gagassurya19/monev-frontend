@@ -22,6 +22,7 @@ import { RefreshCw, Plus, X, Filter, GraduationCap, Building2, BookOpen, Book, C
 import { ActivityChart, generateSampleData } from "@/components/activity-chart";
 import ClientDate from "@/components/ClientDate";
 import { API_CONFIG, API_ENDPOINTS } from "@/lib/config";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface AppliedFilters {
   university: string;
@@ -663,370 +664,17 @@ export default function AnalyticsPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="px-4 sm:px-6 py-4">
-          {/* Desktop Layout */}
-          <div className="hidden lg:flex items-center justify-between">
-            <div className="flex items-center space-x-4 min-w-0 flex-1">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  {/* Kampus Dropdown */}
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="h-5 w-5 text-red-600" strokeWidth={2} />
-                      <Select value={selectedUniversity} onValueChange={handleUniversityChange}>
-                        <SelectTrigger className="w-auto min-w-[120px] border-none shadow-none text-lg font-bold text-gray-700 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {universities.map((university) => (
-                            <SelectItem key={university} value={university}>
-                              {university}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Add Next Level Button - Kampus */}
-                    {selectedUniversity && currentLevel === 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleAddNextLevel}
-                        className="h-auto w-auto px-2 py-1 ml-2 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Fakultas
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Fakultas Dropdown */}
-                  {currentLevel >= 2 && (
-                    <div className="flex items-center gap-1">
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-red-600" strokeWidth={2} />
-                        <Select value={selectedFakultas} onValueChange={handleFakultasChange}>
-                          <SelectTrigger className="w-auto min-w-[140px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                            <SelectValue placeholder="Pilih Fakultas" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {fakultasData[selectedUniversity as keyof typeof fakultasData]?.map((fakultas: string) => (
-                              <SelectItem key={fakultas} value={fakultas}>
-                                {fakultas}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Remove Level Button - Fakultas */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveLevel(2)}
-                        className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-
-                      {/* Add Next Level Button - Fakultas */}
-                      {selectedFakultas && currentLevel === 2 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleAddNextLevel}
-                          className="h-auto w-auto px-2 py-1 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Prodi
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Prodi Dropdown */}
-                  {currentLevel >= 3 && (
-                    <div className="flex items-center gap-1">
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-red-600" strokeWidth={2} />
-                        <Select value={selectedProdi} onValueChange={handleProdiChange}>
-                          <SelectTrigger className="w-auto min-w-[140px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                            <SelectValue placeholder="Pilih Prodi" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {prodiData[selectedFakultas as keyof typeof prodiData]?.map((prodi: string) => (
-                              <SelectItem key={prodi} value={prodi}>
-                                {prodi}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Remove Level Button - Prodi */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveLevel(3)}
-                        className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-
-                      {/* Add Next Level Button - Prodi */}
-                      {selectedProdi && currentLevel === 3 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleAddNextLevel}
-                          className="h-auto w-auto px-2 py-1 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Mata Kuliah
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Mata Kuliah Dropdown */}
-                  {currentLevel >= 4 && (
-                    <div className="flex items-center gap-1">
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                      <div className="flex items-center gap-2">
-                        <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
-                        <Select value={selectedMataKuliah} onValueChange={handleMataKuliahChange}>
-                          <SelectTrigger className="w-auto min-w-[160px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                            <SelectValue placeholder="Pilih Mata Kuliah" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {mataKuliahData[selectedProdi as keyof typeof mataKuliahData]?.map((mataKuliah: string) => (
-                              <SelectItem key={mataKuliah} value={mataKuliah}>
-                                {mataKuliah}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Remove Level Button - Mata Kuliah */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveLevel(4)}
-                        className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <SidebarTrigger className="-ml-1 block sm:hidden" />
+              <Separator orientation="vertical" className="h-4 block sm:hidden" />
+              <h1 className="text-lg font-semibold text-gray-900">Analytics Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-2 flex-shrink-0">
-              {hasAdditionalFiltersApplied() && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
-              )}
+            <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-            </div>
-          </div>
-
-          {/* Mobile Layout */}
-          <div className="lg:hidden space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="h-4" />
-              </div>
-
-              <div className="flex items-center space-x-4 min-w-0 flex-1">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    {/* Kampus Dropdown */}
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="h-5 w-5 text-red-600" strokeWidth={2} />
-                        <Select value={selectedUniversity} onValueChange={handleUniversityChange}>
-                          <SelectTrigger className="w-auto min-w-[120px] border-none shadow-none text-lg font-bold text-gray-700 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {universities.map((university) => (
-                              <SelectItem key={university} value={university}>
-                                {university}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Add Next Level Button - Kampus */}
-                      {selectedUniversity && currentLevel === 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleAddNextLevel}
-                          className="h-auto w-auto px-2 py-1 ml-2 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Fakultas
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Fakultas Dropdown */}
-                    {currentLevel >= 2 && (
-                      <div className="flex items-center gap-1">
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-red-600" strokeWidth={2} />
-                          <Select value={selectedFakultas} onValueChange={handleFakultasChange}>
-                            <SelectTrigger className="w-auto min-w-[140px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                              <SelectValue placeholder="Pilih Fakultas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fakultasData[selectedUniversity as keyof typeof fakultasData]?.map((fakultas: string) => (
-                                <SelectItem key={fakultas} value={fakultas}>
-                                  {fakultas}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Remove Level Button - Fakultas */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveLevel(2)}
-                          className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-
-                        {/* Add Next Level Button - Fakultas */}
-                        {selectedFakultas && currentLevel === 2 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleAddNextLevel}
-                            className="h-auto w-auto px-2 py-1 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Prodi
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Prodi Dropdown */}
-                    {currentLevel >= 3 && (
-                      <div className="flex items-center gap-1">
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-red-600" strokeWidth={2} />
-                          <Select value={selectedProdi} onValueChange={handleProdiChange}>
-                            <SelectTrigger className="w-auto min-w-[140px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                              <SelectValue placeholder="Pilih Prodi" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {prodiData[selectedFakultas as keyof typeof prodiData]?.map((prodi: string) => (
-                                <SelectItem key={prodi} value={prodi}>
-                                  {prodi}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Remove Level Button - Prodi */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveLevel(3)}
-                          className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-
-                        {/* Add Next Level Button - Prodi */}
-                        {selectedProdi && currentLevel === 3 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleAddNextLevel}
-                            className="h-auto w-auto px-2 py-1 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-50 hover:text-gray-700"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Mata Kuliah
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Mata Kuliah Dropdown */}
-                    {currentLevel >= 4 && (
-                      <div className="flex items-center gap-1">
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                        <div className="flex items-center gap-2">
-                          <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
-                          <Select value={selectedMataKuliah} onValueChange={handleMataKuliahChange}>
-                            <SelectTrigger className="w-auto min-w-[160px] border-none shadow-none text-sm font-medium text-gray-600 focus:ring-0 focus:ring-offset-0 p-0 h-auto">
-                              <SelectValue placeholder="Pilih Mata Kuliah" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {mataKuliahData[selectedProdi as keyof typeof mataKuliahData]?.map((mataKuliah: string) => (
-                                <SelectItem key={mataKuliah} value={mataKuliah}>
-                                  {mataKuliah}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Remove Level Button - Mata Kuliah */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveLevel(4)}
-                          className="h-6 w-6 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                {hasAdditionalFiltersApplied() && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearAllFilters}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Clear All
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={handleRefresh}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -1034,26 +682,208 @@ export default function AnalyticsPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 py-8">
+        {/* Filters Section */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <Filter className="h-5 w-5 text-red-600" />
+                Data Filters
+              </h2>
+              {/* <p className="text-sm text-gray-600 mt-1">
+                Filter analytics data by university, faculty, program, and course
+              </p> */}
+            </div>
+            {hasAdditionalFiltersApplied() && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Kampus Dropdown */}
+            <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-red-600" strokeWidth={2} />
+                <Select value={selectedUniversity} onValueChange={handleUniversityChange}>
+                  <SelectTrigger className="w-auto min-w-[120px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {universities.map((university) => (
+                      <SelectItem key={university} value={university}>
+                        {university}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Add Next Level Button - Kampus */}
+              {selectedUniversity && currentLevel === 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAddNextLevel}
+                  className="h-auto w-auto px-3 py-2 ml-2 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 border"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Fakultas
+                </Button>
+              )}
+            </div>
+
+            {/* Fakultas Dropdown */}
+            {currentLevel >= 2 && (
+              <div className="flex items-center gap-1">
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-red-600" strokeWidth={2} />
+                  <Select value={selectedFakultas} onValueChange={handleFakultasChange}>
+                    <SelectTrigger className="w-auto min-w-[140px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
+                      <SelectValue placeholder="Pilih Fakultas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fakultasData[selectedUniversity as keyof typeof fakultasData]?.map((fakultas: string) => (
+                        <SelectItem key={fakultas} value={fakultas}>
+                          {fakultas}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Remove Level Button - Fakultas */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveLevel(2)}
+                  className="h-8 w-8 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+
+                {/* Add Next Level Button - Fakultas */}
+                {selectedFakultas && currentLevel === 2 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddNextLevel}
+                    className="h-auto w-auto px-3 py-2 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 border"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Prodi
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Prodi Dropdown */}
+            {currentLevel >= 3 && (
+              <div className="flex items-center gap-1">
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-red-600" strokeWidth={2} />
+                  <Select value={selectedProdi} onValueChange={handleProdiChange}>
+                    <SelectTrigger className="w-auto min-w-[140px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
+                      <SelectValue placeholder="Pilih Prodi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {prodiData[selectedFakultas as keyof typeof prodiData]?.map((prodi: string) => (
+                        <SelectItem key={prodi} value={prodi}>
+                          {prodi}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Remove Level Button - Prodi */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveLevel(3)}
+                  className="h-8 w-8 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+
+                {/* Add Next Level Button - Prodi */}
+                {selectedProdi && currentLevel === 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddNextLevel}
+                    className="h-auto w-auto px-3 py-2 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 border"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Mata Kuliah
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Mata Kuliah Dropdown */}
+            {currentLevel >= 4 && (
+              <div className="flex items-center gap-1">
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-2">
+                  <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
+                  <Select value={selectedMataKuliah} onValueChange={handleMataKuliahChange}>
+                    <SelectTrigger className="w-auto min-w-[160px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
+                      <SelectValue placeholder="Pilih Mata Kuliah" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mataKuliahData[selectedProdi as keyof typeof mataKuliahData]?.map((mataKuliah: string) => (
+                        <SelectItem key={mataKuliah} value={mataKuliah}>
+                          {mataKuliah}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Remove Level Button - Mata Kuliah */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveLevel(4)}
+                  className="h-8 w-8 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* ETL Status */}
+          {etlStatus && (
+            <div className="bg-gray-50 rounded-lg p-3 text-sm mt-4">
+              <div className="flex items-center gap-2 text-gray-600">
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">
+                  Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} />
+                </span>
+                {etlStatus.data.isRunning && (
+                  <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                    <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
+                    <span className="text-blue-600 text-xs">Updating...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Chart Section */}
         <div className="mb-8">
-          {/* Simple Data Update Info */}
-          {etlStatus && (
-                    <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate">
-                                Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} />
-                            </span>
-                            {etlStatus.data.isRunning && (
-                                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                                    <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
-                                    <span className="text-blue-600 text-xs">Updating...</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-          
           <ActivityChart 
             data={generateSampleData()} 
             title={appliedFilters.university}
@@ -1062,66 +892,132 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        {/* Additional Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Activities</p>
-                <p className="text-2xl font-bold text-gray-900">2,547</p>
+        {/* Stats Overview Section */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          {/* Left Side - Stats Cards */}
+          <div className="lg:w-1/2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Activities</p>
+                    <p className="text-3xl font-bold text-gray-900">2,547</p>
+                  </div>
+                  <div className="h-16 w-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  <span className="text-green-600 font-medium">+12%</span> from last week
+                </p>
               </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-blue-600" />
+
+              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Average Score</p>
+                    <p className="text-3xl font-bold text-gray-900">3.2</p>
+                  </div>
+                  <div className="h-16 w-16 bg-green-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  <span className="text-green-600 font-medium">+5%</span> improvement
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active Users</p>
+                    <p className="text-3xl font-bold text-gray-900">1,234</p>
+                  </div>
+                  <div className="h-16 w-16 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Users className="h-8 w-8 text-purple-600" />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  <span className="text-green-600 font-medium">+8%</span> this month
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                    <p className="text-3xl font-bold text-gray-900">87%</p>
+                  </div>
+                  <div className="h-16 w-16 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <School className="h-8 w-8 text-orange-600" />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  <span className="text-green-600 font-medium">+3%</span> from target
+                </p>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              <span className="text-green-600 font-medium">+12%</span> from last week
-            </p>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Average Score</p>
-                <p className="text-2xl font-bold text-gray-900">3.2</p>
+          {/* Right Side - Activity Distribution Pie Chart */}
+          <div className="lg:w-1/2">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm h-full">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Activity Distribution</h3>
+                <p className="text-sm text-gray-600">Breakdown by activity type</p>
               </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Quiz', value: 532, color: '#1e3a8a' },
+                        { name: 'Assignment', value: 687, color: '#ea580c' },
+                        { name: 'Video', value: 423, color: '#16a34a' },
+                        { name: 'Forum', value: 345, color: '#0ea5e9' },
+                        { name: 'URL', value: 560, color: '#9333ea' },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Quiz', value: 532, color: '#1e3a8a' },
+                        { name: 'Assignment', value: 687, color: '#ea580c' },
+                        { name: 'Video', value: 423, color: '#16a34a' },
+                        { name: 'Forum', value: 345, color: '#0ea5e9' },
+                        { name: 'URL', value: 560, color: '#9333ea' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: any) => [value, 'Activities']}
+                      labelStyle={{ color: '#374151' }}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      formatter={(value, entry) => (
+                        <span style={{ color: entry.color, fontWeight: 'bold' }}>
+                          {value}
+                        </span>
+                      )}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              <span className="text-green-600 font-medium">+5%</span> improvement
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-2xl font-bold text-gray-900">1,234</p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              <span className="text-green-600 font-medium">+8%</span> this month
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">87%</p>
-              </div>
-              <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <School className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              <span className="text-green-600 font-medium">+3%</span> from target
-            </p>
           </div>
         </div>
 
@@ -1217,7 +1113,7 @@ export default function AnalyticsPage() {
                         )}
                       </button>
                     </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[100px]">
+                    {/* <TableHead className="px-2 sm:px-4 min-w-[100px]">
                       <button
                         onClick={() => handleSort("id_course")}
                         className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
@@ -1230,7 +1126,7 @@ export default function AnalyticsPage() {
                         )}
                       </button>
                     </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[100px]">ID Number</TableHead>
+                    <TableHead className="px-2 sm:px-4 min-w-[100px]">ID Number</TableHead> */}
                     <TableHead className="px-2 sm:px-4 text-center min-w-[80px]">
                       <button
                         onClick={() => handleSort("num_teacher")}
@@ -1257,7 +1153,7 @@ export default function AnalyticsPage() {
                         )}
                       </button>
                     </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[100px]">Subject Code</TableHead>
+                    {/* <TableHead className="px-2 sm:px-4 min-w-[100px]">Subject Code</TableHead>
                     <TableHead className="px-2 sm:px-4 min-w-[140px]">
                       <button
                         onClick={() => handleSort("subject_name")}
@@ -1270,8 +1166,8 @@ export default function AnalyticsPage() {
                           </span>
                         )}
                       </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[80px]">Class</TableHead>
+                    </TableHead> */}
+                    {/* <TableHead className="px-2 sm:px-4 min-w-[80px]">Class</TableHead> */}
                     <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
                       <div title="File">
                         <FileText className="w-4 h-4 mx-auto" />
@@ -1365,7 +1261,7 @@ export default function AnalyticsPage() {
                             {course.program_studi}
                           </div>
                         </TableCell>
-                        <TableCell className="p-2 sm:p-4">
+                        {/* <TableCell className="p-2 sm:p-4">
                           <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                             {course.id_course}
                           </code>
@@ -1374,7 +1270,7 @@ export default function AnalyticsPage() {
                           <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                             {course.id_number}
                           </code>
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="p-2 sm:p-4 text-center">
                           <Badge variant="secondary" className="text-xs">
                             {course.num_teacher}
@@ -1385,7 +1281,7 @@ export default function AnalyticsPage() {
                             {course.num_student}
                           </Badge>
                         </TableCell>
-                        <TableCell className="p-2 sm:p-4">
+                        {/* <TableCell className="p-2 sm:p-4">
                           <code className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
                             {course.subject_code}
                           </code>
@@ -1394,12 +1290,12 @@ export default function AnalyticsPage() {
                           <div className="text-xs sm:text-sm font-medium text-gray-900 max-w-[140px] truncate" title={course.subject_name}>
                             {course.subject_name}
                           </div>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
+                        </TableCell> */}
+                        {/* <TableCell className="p-2 sm:p-4">
                           <Badge variant="outline" className="text-xs">
                             {course.class}
                           </Badge>
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="p-2 sm:p-4 text-center">
                           <span className="text-xs sm:text-sm font-medium">{course.file}</span>
                         </TableCell>

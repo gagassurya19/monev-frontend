@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip, Cell } from 'recharts'
 import { ChartContainer, ChartConfig } from '@/components/ui/chart'
 
 // Type definitions for the chart data
@@ -65,6 +65,35 @@ const CustomLegend = (props: any) => {
   )
 }
 
+// Custom tooltip component to show data values
+const CustomTooltip = (props: any) => {
+  const { active, payload, label } = props
+
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
+        <p className="font-semibold text-gray-800 mb-2">{`Kategori: ${label}`}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center justify-between gap-4 mb-1">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm text-gray-600">{entry.dataKey}:</span>
+            </div>
+            <span className="text-sm font-medium text-gray-800">
+              {entry.value.toFixed(1)} aktivitas
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return null
+}
+
 export function ActivityChart({ 
   data, 
   title = "LVL 0", 
@@ -73,7 +102,28 @@ export function ActivityChart({
   className = ""
 }: ActivityChartProps) {
   return (
-    <div className={`w-full bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div className={`w-full bg-white rounded-lg border border-gray-200 p-6 ${className} chart-container`}>
+      <style>{`
+        .chart-container * {
+          filter: none !important;
+          opacity: 1 !important;
+          fill-opacity: 1 !important;
+        }
+        .chart-container .recharts-bar-rectangle {
+          transition: box-shadow 0.2s ease !important;
+        }
+        .chart-container .recharts-bar-rectangle:hover {
+          box-shadow: inset 0 0 0 2px #374151 !important;
+          filter: none !important;
+          opacity: 1 !important;
+          fill-opacity: 1 !important;
+        }
+        .chart-container .recharts-tooltip-cursor,
+        .chart-container .recharts-active-bar,
+        .chart-container .recharts-active-shape {
+          display: none !important;
+        }
+      `}</style>
       {/* Chart Title */}
       <div className="text-center mb-6">
         <h3 className="text-xl font-bold text-gray-800 bg-gray-100 inline-block px-4 py-2 rounded-lg">
@@ -98,6 +148,9 @@ export function ActivityChart({
               bottom: 80, // Extra space for legend
             }}
             barCategoryGap="20%"
+            style={{ cursor: 'pointer' }}
+            onMouseMove={() => {}}
+            onMouseLeave={() => {}}
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
@@ -132,31 +185,38 @@ export function ActivityChart({
               fill="var(--color-Quiz)"
               radius={[2, 2, 0, 0]}
               maxBarSize={40}
+              isAnimationActive={false}
             />
             <Bar 
               dataKey="Assignment" 
               fill="var(--color-Assignment)"
               radius={[2, 2, 0, 0]}
               maxBarSize={40}
+              isAnimationActive={false}
             />
             <Bar 
               dataKey="Video" 
               fill="var(--color-Video)"
               radius={[2, 2, 0, 0]}
               maxBarSize={40}
+              isAnimationActive={false}
             />
             <Bar 
               dataKey="Forum" 
               fill="var(--color-Forum)"
               radius={[2, 2, 0, 0]}
               maxBarSize={40}
+              isAnimationActive={false}
             />
             <Bar 
               dataKey="URL" 
               fill="var(--color-URL)"
               radius={[2, 2, 0, 0]}
               maxBarSize={40}
+              isAnimationActive={false}
             />
+            
+            <Tooltip content={<CustomTooltip />} />
             
             <Legend 
               content={<CustomLegend />}
