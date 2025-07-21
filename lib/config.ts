@@ -23,7 +23,15 @@ export const API_ENDPOINTS = {
   COURSES: '/api/courses',
   COURSE_ACTIVITIES: (courseId: number) => `/api/courses/${courseId}/activities`,
   ACTIVITY_STUDENTS: (activityId: number) => `/api/activities/${activityId}/students`,
-  ETL_STATUS: '/api/ETL/status',
+  ETL: {
+    STATUS: '/api/ETL/status',
+    LOGS: '/api/ETL/logs',
+    RUN: '/api/ETL/run',
+    RUN_INCREMENTAL: '/api/ETL/run_incremental',
+    CLEAR_STUCK: '/api/ETL/clear_stuck',
+    FORCE_CLEAR: '/api/ETL/force_clear',
+    DEBUG: '/api/ETL/debug',
+  },
   AUTH: {
     VALIDATE_TOKEN: '/api/auth/validate-token',
     USER_PROFILE: '/api/auth/user-profile',

@@ -120,6 +120,17 @@ class ApiClient {
       errorData = await response.json();
     } catch {
       // If response is not JSON, create a generic error
+      // For 401 errors without proper JSON, don't clear auth unless it's clearly a token issue
+      if (response.status === 401) {
+        console.warn('401 error without JSON response, likely endpoint not available');
+        throw new ApiError(
+          'ENDPOINT_NOT_AVAILABLE',
+          'Authentication failed or endpoint not available',
+          { status: response.status, statusText: response.statusText },
+          response.status
+        );
+      }
+      
       throw new ApiError(
         'UNKNOWN_ERROR',
         `Request failed with status ${response.status}`,
@@ -130,7 +141,20 @@ class ApiClient {
 
     // Handle authentication errors
     if (response.status === 401) {
-      this.clearAuth();
+      // Only clear auth if it's definitely a token issue (not endpoint availability)
+      const shouldClearAuth = errorData.error && (
+        errorData.error.code === 'EXPIRED_TOKEN' || 
+        errorData.error.code === 'INVALID_TOKEN' ||
+        errorData.error.code === 'MALFORMED_TOKEN' ||
+        (errorData.error.message && errorData.error.message.toLowerCase().includes('expired'))
+      );
+      
+      if (shouldClearAuth) {
+        console.warn('Token appears to be expired or invalid, clearing authentication');
+        this.clearAuth();
+      } else {
+        console.warn('401 error but token may still be valid, not clearing auth:', errorData.error);
+      }
       
       const authErrorMessages: Record<string, string> = {
         'INVALID_TOKEN': 'Authentication token is invalid. Please login again.',
@@ -138,12 +162,12 @@ class ApiClient {
         'MISSING_TOKEN': 'Authentication required. Please login first.',
       };
 
-      const message = authErrorMessages[errorData.error.code] || 'Authentication failed. Please login again.';
+      const message = authErrorMessages[errorData.error?.code] || 'Authentication failed or endpoint not available.';
       
       throw new ApiError(
-        errorData.error.code,
+        errorData.error?.code || 'AUTH_ERROR',
         message,
-        errorData.error.details,
+        errorData.error?.details,
         response.status
       );
     }

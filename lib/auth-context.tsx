@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error: null,
   });
 
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
   const tokenCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
 
@@ -108,6 +109,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const verificationResult = await JWTAuth.verifyToken(token);
       
       if (!verificationResult.valid) {
+        // Only remove token if it's definitely expired or invalid
+        if (verificationResult.error && (
+          verificationResult.error.includes('expired') ||
+          verificationResult.error.includes('Invalid token payload')
+        )) {
+          console.warn('Token is expired or invalid during authentication');
+          JWTAuth.removeToken();
+        } else {
+          console.warn('Token verification failed but keeping token during authentication:', verificationResult.error);
+        }
         updateAuthState(false, null, null, verificationResult.error || 'Token verification failed');
         return false;
       }
@@ -212,8 +223,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           );
           return;
         } else {
-          // Remove invalid stored token
-          JWTAuth.removeToken();
+          // Only remove token if it's definitely expired or invalid
+          if (verificationResult.error && (
+            verificationResult.error.includes('expired') ||
+            verificationResult.error.includes('Invalid token payload')
+          )) {
+            console.warn('Token is expired or invalid, removing from storage');
+            JWTAuth.removeToken();
+          } else {
+            console.warn('Token verification failed but keeping token:', verificationResult.error);
+          }
         }
       }
 
@@ -229,6 +248,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     refreshAuth();
   }, []); // Empty dependency array - run only once
+
+  // Show refresh button after 3 seconds of loading
+  useEffect(() => {
+    if (authState.isLoading) {
+      const timer = setTimeout(() => {
+        setShowRefreshButton(true);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setShowRefreshButton(false);
+    }
+  }, [authState.isLoading]);
 
   // Listen for storage changes (for logout from other tabs)
   useEffect(() => {
@@ -278,6 +310,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 Mohon tunggu...
               </p>
             </div>
+
+            {/* Refresh button - appears after 3 seconds */}
+            {showRefreshButton && (
+              <div className="pt-4">
+                <button
+                  onClick={() => refreshAuth(true)}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md transition-colors duration-200"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Coba Lagi
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </AuthContext.Provider>

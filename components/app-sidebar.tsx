@@ -8,7 +8,8 @@ import {
   BarChart3,
   Home,
   LogOut,
-  User
+  User,
+  Database
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -101,6 +102,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     signOut()
   }
 
+  // Add admin ETL page for admin users
+  const getNavItems = () => {
+    const baseItems = data.navMain;
+    
+    if (user?.admin) {
+      return [
+        ...baseItems,
+        {
+          title: "Admin ETL",
+          url: "/admin/etl",
+          icon: Database,
+        }
+      ];
+    }
+    
+    return baseItems;
+  }
+
   return (
     <Sidebar
       variant="inset"
@@ -130,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {/* <SidebarGroupLabel className="flex items-center">Main Navigation</SidebarGroupLabel> */}
           <SidebarGroupContent>
             <SidebarMenu>
-              {data.navMain.map((item) => (
+              {getNavItems().map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

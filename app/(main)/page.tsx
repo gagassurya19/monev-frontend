@@ -328,8 +328,8 @@ export default function OptimizedDashboard() {
     course_name: "all",
     activity_type: "all",
     dosen_pengampu: "all",
-    sortBy: "course_name",
-    sortOrder: "asc"
+    sortBy: "keaktifan",
+    sortOrder: "desc"
   })
 
   // API-based data states
@@ -355,7 +355,7 @@ export default function OptimizedDashboard() {
     try {
       setEtlLoading(true)
       // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL_STATUS, {
+      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL.STATUS, {
         headers: {
           'Authorization': 'Bearer default-webhook-token-change-this'
         }
