@@ -23,7 +23,7 @@ import { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '@/lib/config';
 import { ETLStatus, ETLLog } from '@/lib/etl-types';
 import CeLOEETLTab from '@/components/admin/etl/etl-celoe-tab';
-import ExternalAPIsETLTab from '@/components/admin/etl/etl-external-tab';
+import ExternalAPIsETLTab from '@/components/admin/etl/etl-chart-tab';
 
 export default function AdminETLPage() {
     const { user, isAuthenticated } = useAuth();

@@ -29,13 +29,16 @@ export class JWTGenerator {
   /**
    * Create JWT payload
    */
-  private static createPayload(username: string, expirationMinutes: number = 5): string {
+  private static createPayload(data: any): string {
     const now = Math.floor(Date.now() / 1000);
     const payload: JWTPayload = {
-      sub: username,
-      name: username.charAt(0).toUpperCase() + username.slice(1),
-      admin: username.includes('admin'),
-      exp: now + (expirationMinutes * 60), // Convert minutes to seconds
+      sub: data.username,
+      name: data.name,
+      kampus: data.kampus,
+      fakultas: data.fakultas,
+      prodi: data.prodi,
+      admin: data.userRole === 'admin',
+      exp: now + (data.expirationMinutes * 60), // Convert minutes to seconds
       iat: now
     };
     return this.base64urlEncode(JSON.stringify(payload));
@@ -45,11 +48,11 @@ export class JWTGenerator {
    * Simple HMAC SHA256 simulation (NOT SECURE - for testing only)
    * In production, use proper cryptographic libraries
    */
-  private static createSignature(data: string, secret: string): string {
+  private static createSignature(data: any, secret: string): string {
     // This is a simplified signature for testing purposes
     // In production, use proper HMAC SHA256
     let hash = 0;
-    const combined = data + secret;
+    const combined = JSON.stringify(data) + secret;
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
@@ -62,19 +65,18 @@ export class JWTGenerator {
    * Generate a JWT token for testing
    * WARNING: This is for testing purposes only and is not cryptographically secure
    */
-  static generateTestToken(username: string, expirationMinutes: number = 5): string {
+  static generateTestToken(data: any): string {
     const header = this.createHeader();
-    const payload = this.createPayload(username, expirationMinutes);
-    const signature = this.createSignature(`${header}.${payload}`, 'SECRET123');
-    
+    const payload = this.createPayload(data);
+    const signature = this.createSignature(data, 'SECRET123');
     return `${header}.${payload}.${signature}`;
   }
 
   /**
    * Generate token URL for testing
    */
-  static generateTokenURL(username: string, expirationMinutes: number = 5, baseURL?: string): string {
-    const token = this.generateTestToken(username, expirationMinutes);
+  static generateTokenURL(data: any, baseURL?: string): string {
+    const token = this.generateTestToken(data);
     const url = baseURL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     return `${url}/?token=${token}`;
   }

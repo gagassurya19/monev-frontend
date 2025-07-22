@@ -827,7 +827,7 @@ export default function OptimizedDashboard() {
           <div className="bg-gray-50 rounded-lg text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <Clock className="w-4 h-4" />
-              <span>Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} /></span>
+              <span>Terakhir update: <ClientDate dateString={etlStatus.data.lastRun?.end_date} /></span>
               {etlStatus.data.isRunning && (
                 <div className="flex items-center gap-1 ml-2">
                   <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />

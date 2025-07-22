@@ -183,7 +183,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Avatar>
               <div className="flex flex-col flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate max-w-[150px] font-semibold text-sm">
-                  {user?.username || 'null'}
+                  {user?.name || 'null'}
                 </span>
                 <TokenTimeRemaining />
               </div>

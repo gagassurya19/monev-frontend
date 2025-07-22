@@ -133,11 +133,14 @@ export interface ErrorResponse {
 
 // JWT Authentication types
 export interface JWTPayload {
-  sub: string      // username
-  name?: string    // name  
-  admin?: boolean  // admin flag
-  exp: number      // expiration timestamp
-  iat?: number     // issued at
+  sub: string;
+  name?: string;
+  admin?: boolean;
+  kampus?: string;
+  fakultas?: string;
+  prodi?: string;
+  exp: number;
+  iat?: number;
 }
 
 export interface AuthState {
