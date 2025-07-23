@@ -158,4 +158,47 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   signOut: () => void
   refreshAuth: () => void
+}
+
+// ETL Chart Types
+export interface ETLLog {
+  id: string;
+  start_date: string;
+  end_date: string;
+  duration: string;
+  status: string;
+  total_records: string;
+  offset: string;
+  created_at: string;
+}
+
+export interface ETLLogsResponse {
+  status: boolean;
+  data: {
+    logs: ETLLog[];
+    pagination: {
+      total: string;
+      limit: number;
+      offset: number;
+      current_page: number;
+      total_pages: number;
+    };
+  };
+}
+
+export interface ETLStartResponse {
+  status: boolean;
+  message: string;
+  info: string;
+}
+
+export interface ETLClearStuckResponse {
+  status: boolean;
+  message: string;
+}
+
+export interface ETLStreamData {
+  timestamp: string;
+  message: string;
+  level: 'info' | 'error' | 'warning' | 'success';
 } 

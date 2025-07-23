@@ -31,6 +31,11 @@ export const API_ENDPOINTS = {
     CLEAR_STUCK: '/api/ETL/clear_stuck',
     FORCE_CLEAR: '/api/ETL/force_clear',
     DEBUG: '/api/ETL/debug',
+    // CHART ACTIVITY ETL API
+    CHART_FETCH: '/api/etl/chart/fetch',
+    CHART_LOGS: '/api/etl/chart/logs',
+    CHART_STREAM: '/api/etl/chart/stream',
+    CHART_CLEAR_STUCK: '/api/etl/chart/clear-stuck',
   },
   AUTH: {
     VALIDATE_TOKEN: '/api/auth/validate-token',
