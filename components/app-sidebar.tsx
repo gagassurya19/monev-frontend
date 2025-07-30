@@ -9,7 +9,8 @@ import {
   Home,
   LogOut,
   User,
-  Database
+  Database,
+  School
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -38,14 +39,20 @@ import { Separator } from "@/components/ui/separator"
 const data = {
   navMain: [
     {
-      title: "Dashboard",
+      title: "Home",
       url: "/",
       icon: Home,
       isActive: true,
     },
     {
-      title: "Analytics",
-      url: "/analytics",
+      title: "Course Performance",
+      url: "/course-performance",
+      icon: School,
+      isActive: true,
+    },
+    {
+      title: "Student Activities Summary",
+      url: "/student-activities-summary",
       icon: BarChart3,
     },
   ],

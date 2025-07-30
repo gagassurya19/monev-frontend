@@ -59,6 +59,55 @@ export interface CourseActivitiesResponse {
   };
 }
 
+// Activity Detail Types
+export interface ActivityDetailResponse {
+  info: {
+    activity: {
+      id: number;
+      course_id: number;
+      section: number;
+      activity_id: number;
+      activity_type: string;
+      activity_name: string;
+      accessed_count: number;
+      submission_count: number | null;
+      graded_count: number | null;
+      attempted_count: number | null;
+      created_at: string;
+    };
+    course: {
+      course_id: number;
+      course_name: string;
+      kelas: string;
+      jumlah_aktivitas: number;
+      jumlah_mahasiswa: number;
+      dosen_pengampu: string;
+    };
+  };
+  students: {
+    data: {
+      id: number;
+      user_id: number;
+      nim: string;
+      full_name: string;
+      program_studi: string | null;
+      waktu_mulai: string;
+      waktu_selesai: string;
+      durasi_pengerjaan: string;
+      jumlah_soal: number;
+      jumlah_dikerjakan: number;
+      nilai: string;
+      waktu_aktivitas: string;
+    };
+    pagination: PaginationInfo;
+    statistics: {
+      total_participants: number;
+      average_score: string;
+      completion_rate: number;
+    };
+  };
+}
+
 // Student Types
 export interface StudentDisplayData {
   user_id: number;
@@ -74,6 +123,7 @@ export interface StudentDisplayData {
 }
 
 export interface ActivityStudentsResponse {
+  students: any;
   data: StudentDisplayData[];
   pagination: PaginationInfo;
   activity_info: {
@@ -149,6 +199,9 @@ export interface AuthState {
     username: string
     name?: string
     admin?: boolean
+    kampus?: string
+    fakultas?: string
+    prodi?: string
   } | null
   token: string | null
   isLoading: boolean

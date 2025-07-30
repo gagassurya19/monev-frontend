@@ -5,7 +5,9 @@ import {
   Course,
   CourseActivitiesResponse,
   ActivitiesFilters,
+  ActivityDetailResponse,
 } from '../types';
+import { API_ENDPOINTS, API_CONFIG } from '../config';
 
 /**
  * Get all courses with filtering and pagination
@@ -25,7 +27,7 @@ export async function getCourses(filters: CoursesFilters = {}): Promise<CoursesR
       ...(filters.sort_order && { sort_order: filters.sort_order }),
     };
 
-    const response = await apiClient.get<CoursesResponse>('/api/courses', queryParams);
+    const response = await apiClient.get<CoursesResponse>(API_ENDPOINTS.COURSES, queryParams);
     return response;
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -53,7 +55,7 @@ export async function getCourseActivities(
     };
 
     const response = await apiClient.get<CourseActivitiesResponse>(
-      `/api/courses/${courseId}/activities`,
+      API_ENDPOINTS.COURSE_ACTIVITIES(courseId),
       queryParams
     );
     return response;
@@ -63,52 +65,13 @@ export async function getCourseActivities(
   }
 }
 
-/**
- * Get a single course by ID (if needed for future use)
- * @param courseId - The course ID
- * @returns Promise<Course>
- */
-export async function getCourse(courseId: number): Promise<Course> {
+// get activity detail
+export async function getActivityDetail(courseId: number, activityId: number, activityType: string, limit: number): Promise<ActivityDetailResponse> {
   try {
-    const response = await apiClient.get<Course>(`/api/courses/${courseId}`);
+    const response = await apiClient.get<ActivityDetailResponse>(API_ENDPOINTS.ACTIVITY_DETAIL(courseId, activityId, activityType), { limit });
     return response;
   } catch (error) {
-    console.error(`Error fetching course ${courseId}:`, error);
+    console.error(`Error fetching activity detail for course ${courseId} and activity ${activityId}:`, error);
     throw error;
   }
 }
-
-/**
- * Search courses with debounced search term
- * @param searchTerm - The search term
- * @param additionalFilters - Additional filters to apply
- * @returns Promise<CoursesResponse>
- */
-export async function searchCourses(
-  searchTerm: string,
-  additionalFilters: Omit<CoursesFilters, 'search'> = {}
-): Promise<CoursesResponse> {
-  return getCourses({
-    ...additionalFilters,
-    search: searchTerm,
-  });
-}
-
-/**
- * Get courses with specific sorting
- * @param sortBy - Field to sort by
- * @param sortOrder - Sort order (asc/desc)
- * @param additionalFilters - Additional filters to apply
- * @returns Promise<CoursesResponse>
- */
-export async function getSortedCourses(
-  sortBy: CoursesFilters['sort_by'],
-  sortOrder: CoursesFilters['sort_order'] = 'asc',
-  additionalFilters: Omit<CoursesFilters, 'sort_by' | 'sort_order'> = {}
-): Promise<CoursesResponse> {
-  return getCourses({
-    ...additionalFilters,
-    sort_by: sortBy,
-    sort_order: sortOrder,
-  });
-} 

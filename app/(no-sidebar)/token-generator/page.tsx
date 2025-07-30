@@ -19,10 +19,13 @@ import {
   User,
   Shield,
   CheckCircle,
-  Info
+  Info,
+  Lock
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 export default function TokenGeneratorPage() {
+  const { user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [expirationMinutes, setExpirationMinutes] = useState(5);
@@ -34,6 +37,30 @@ export default function TokenGeneratorPage() {
   const [generatedURL, setGeneratedURL] = useState('');
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [copySuccess, setCopySuccess] = useState<string>('');
+
+  // Check if user is admin
+//   if (!isAuthenticated || !user?.admin) {
+//     return (
+//         <div className="flex items-center justify-center min-h-screen p-4">
+//             <Card className="w-full max-w-md">
+//                 <CardHeader className="text-center">
+//                     <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+//                         <Lock className="w-6 h-6 text-red-600" />
+//                     </div>
+//                     <CardTitle className="text-red-600">Access Denied</CardTitle>
+//                     <CardDescription>
+//                         This page is only accessible to admin users
+//                     </CardDescription>
+//                 </CardHeader>
+//                 <CardContent className="text-center">
+//                     <p className="text-sm text-gray-600">
+//                         {!isAuthenticated ? 'Please log in to continue' : 'You do not have admin privileges'}
+//                     </p>
+//                 </CardContent>
+//             </Card>
+//         </div>
+//     );
+// }
 
   const generateToken = () => {
     if (!username.trim()) {
@@ -188,8 +215,8 @@ export default function TokenGeneratorPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="tub">TELYU Bandung</SelectItem>
-                          <SelectItem value="tup">TELYU Purwokerto</SelectItem>
+                          <SelectItem value="bdg">TELYU Bandung</SelectItem>
+                          <SelectItem value="pwt">TELYU Purwokerto</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -200,7 +227,7 @@ export default function TokenGeneratorPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="fif">Fakultas Informatika</SelectItem>
+                          <SelectItem value="305">Fakultas Ekonomi Bisnis</SelectItem>
                           <SelectItem value="fik">Fakultas Ilmu Komunikasi</SelectItem>
                         </SelectContent>
                       </Select>
@@ -212,7 +239,7 @@ export default function TokenGeneratorPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="s1-informatika">S1 Informatika</SelectItem>
+                          <SelectItem value="318">PRODI S1 ADMINISTRASI BISNIS (FEB)</SelectItem>
                           <SelectItem value="s1-komunikasi">S1 Komunikasi</SelectItem>
                         </SelectContent>
                       </Select>

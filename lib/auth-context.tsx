@@ -138,6 +138,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           username: payload.sub,
           name: payload.name,
           admin: payload.admin || false,
+          kampus: payload.kampus,
+          fakultas: payload.fakultas,
+          prodi: payload.prodi,
         },
         token,
         null
@@ -186,6 +189,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               username: payload.sub,
               name: payload.name,
               admin: payload.admin || false,
+              kampus: payload.kampus,
+              fakultas: payload.fakultas,
+              prodi: payload.prodi,
             },
             urlToken,
             null
@@ -217,6 +223,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               username: payload.sub,
               name: payload.name,
               admin: payload.admin || false,
+              kampus: payload.kampus,
+              fakultas: payload.fakultas,
+              prodi: payload.prodi,
             },
             storedToken,
             null

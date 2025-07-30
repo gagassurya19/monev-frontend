@@ -70,7 +70,7 @@ interface ETLStatus {
   };
 }
 
-export default function AnalyticsPage() {
+export default function StudentActivitesSummaryPage() {
   const [selectedUniversity, setSelectedUniversity] = useState("TEL-U BANDUNG");
   const [selectedFakultas, setSelectedFakultas] = useState("");
   const [selectedProdi, setSelectedProdi] = useState("");
@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
     try {
       setEtlLoading(true)
       // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL_STATUS, {
+      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL.STATUS, {
         headers: {
           'Authorization': 'Bearer default-webhook-token-change-this'
         }
@@ -668,7 +668,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center space-x-2">
               <SidebarTrigger className="-ml-1 block sm:hidden" />
               <Separator orientation="vertical" className="h-4 block sm:hidden" />
-              <h1 className="text-lg font-semibold text-gray-900">Analytics Dashboard</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Student Activities Summary</h1>
             </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={handleRefresh}>

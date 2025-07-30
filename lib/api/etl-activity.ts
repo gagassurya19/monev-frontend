@@ -1,5 +1,5 @@
 import { apiClient } from '../api-client';
-import { API_ENDPOINTS, API_CONFIG } from '../config';
+import { API_ENDPOINTS } from '../config';
 import {
   ETLStartResponse,
   ETLLogsResponse,
@@ -13,21 +13,8 @@ import {
  */
 export async function startETLChart(): Promise<ETLStartResponse> {
   try {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ETL.CHART_FETCH}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer default-webhook-token-change-this'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_FETCH);
+    return response;
   } catch (error) {
     console.error('Error starting ETL chart process:', error);
     throw error;
@@ -44,25 +31,11 @@ export async function getETLChartLogs(params: {
   offset?: number;
 } = {}): Promise<ETLLogsResponse> {
   try {
-    const queryParams = new URLSearchParams();
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.offset) queryParams.append('offset', params.offset.toString());
-
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ETL.CHART_LOGS}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer default-webhook-token-change-this'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await apiClient.get<ETLLogsResponse>(
+      API_ENDPOINTS.ETL.ACTIVITY.CHART_LOGS,
+      params
+    );
+    return response;
   } catch (error) {
     console.error('Error fetching ETL chart logs:', error);
     throw error;
@@ -75,21 +48,8 @@ export async function getETLChartLogs(params: {
  */
 export async function fetchETLChart(): Promise<ETLStartResponse> {
   try {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ETL.CHART_FETCH}`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer default-webhook-token-change-this'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_FETCH);
+    return response;
   } catch (error) {
     console.error('Error fetching ETL chart process:', error);
     throw error;
@@ -110,7 +70,7 @@ export async function streamETLChartLogs(
   onError: (error: Error) => void,
   onOpen: () => void
 ): Promise<() => void> {
-  const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ETL.CHART_STREAM}?log_id=${logId}`;
+  const url = `${API_ENDPOINTS.ETL.ACTIVITY.CHART_STREAM}?log_id=${logId}`;
   
   const abortController = new AbortController();
   let isStreaming = false;
@@ -119,7 +79,6 @@ export async function streamETLChartLogs(
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': 'Bearer default-webhook-token-change-this',
         'Accept': 'text/event-stream',
         'Cache-Control': 'no-cache'
       },
@@ -140,7 +99,7 @@ export async function streamETLChartLogs(
       throw new Error('No response body reader available');
     }
 
-    let buffer = ''; // Buffer untuk handle partial chunks
+    let buffer = '';
 
     const readStream = async () => {
       try {
@@ -154,9 +113,8 @@ export async function streamETLChartLogs(
           const chunk = decoder.decode(value, { stream: true });
           buffer += chunk;
           
-          // Process complete lines (ending with \n\n)
           const events = buffer.split('\n\n');
-          buffer = events.pop() || ''; // Keep incomplete event in buffer
+          buffer = events.pop() || '';
 
           for (const event of events) {
             if (!event.trim()) continue;
@@ -173,11 +131,9 @@ export async function streamETLChartLogs(
             
             if (data && data !== '[DONE]') {
               try {
-                // Validate JSON before sending
                 const parsed = JSON.parse(data);
                 onMessage(data);
                 
-                // Handle disconnect message
                 if (parsed.type === 'disconnected') {
                   isStreaming = false;
                   break;
@@ -204,7 +160,6 @@ export async function streamETLChartLogs(
 
     readStream();
 
-    // Return cleanup function
     return () => {
       isStreaming = false;
       abortController.abort();
@@ -223,24 +178,10 @@ export async function streamETLChartLogs(
  */
 export async function clearStuckETLChart(): Promise<ETLClearStuckResponse> {
   try {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.ETL.CHART_CLEAR_STUCK}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer default-webhook-token-change-this',
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await apiClient.post<ETLClearStuckResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_CLEAR_STUCK);
+    return response;
   } catch (error) {
     console.error('Error clearing stuck ETL chart processes:', error);
     throw error;
   }
-} 
+}

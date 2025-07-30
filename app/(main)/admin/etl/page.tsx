@@ -3,37 +3,20 @@
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api-client';
 import { 
     Database, 
     CheckCircle, 
-    AlertCircle, 
     Lock,
     Activity,
     BookOpen,
     Globe,
-    Cloud,
-    Layers,
-    Plus
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { API_ENDPOINTS } from '@/lib/config';
-import { ETLStatus, ETLLog } from '@/lib/etl-types';
 import CeLOEETLTab from '@/components/admin/etl/etl-celoe-tab';
 import ExternalAPIsETLTab from '@/components/admin/etl/etl-chart-tab';
 
 export default function AdminETLPage() {
     const { user, isAuthenticated } = useAuth();
-    const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
-    const [etlLogs, setEtlLogs] = useState<ETLLog[]>([]);
-    const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-    const [logLimit, setLogLimit] = useState(5);
-    const [logOffset, setLogOffset] = useState(0);
-    const [hasConnectionError, setHasConnectionError] = useState(false);
 
     // Check if user is admin
     if (!isAuthenticated || !user?.admin) {
@@ -59,103 +42,6 @@ export default function AdminETLPage() {
         );
     }
 
-    // Fetch ETL Status
-    const fetchETLStatus = async () => {
-        if (!isAuthenticated || !user?.admin) {
-            return;
-        }
-
-        setIsLoadingStatus(true);
-        try {
-            const response = await apiClient.request<ETLStatus>(API_ENDPOINTS.ETL.STATUS, {
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                }
-            });
-            setEtlStatus(response);
-            setHasConnectionError(false); // Reset error state on success
-            console.log('Showing toast: Status Updated');
-            toast({
-                title: "Status Updated",
-                description: "ETL status has been refreshed",
-            });
-        } catch (error: any) {
-            setHasConnectionError(true); // Set error state
-            // Don't show error toast for 401 errors (authentication issues)
-            if (error.status !== 401) {
-                toast({
-                    title: "Error",
-                    description: error.message || "Failed to fetch ETL status",
-                    variant: "destructive",
-                });
-            }
-            console.error('ETL Status fetch error:', error);
-        } finally {
-            setIsLoadingStatus(false);
-        }
-    };
-
-    // Fetch ETL Logs
-    const fetchETLLogs = async () => {
-        if (!isAuthenticated || !user?.admin) {
-            return;
-        }
-
-        setIsLoadingLogs(true);
-        try {
-            const response = await apiClient.request<{ status: boolean; data: { logs: ETLLog[] } }>(API_ENDPOINTS.ETL.LOGS, {
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                }
-            }, {
-                limit: logLimit,
-                offset: logOffset
-            });
-            setEtlLogs(response.data?.logs || []);
-            toast({
-                title: "Logs Updated",
-                description: "ETL logs have been refreshed",
-            });
-        } catch (error: any) {
-            // Don't show error toast for 401 errors (authentication issues)
-            if (error.status !== 401) {
-                toast({
-                    title: "Error",
-                    description: error.message || "Failed to fetch ETL logs",
-                    variant: "destructive",
-                });
-            }
-            console.error('ETL Logs fetch error:', error);
-        } finally {
-            setIsLoadingLogs(false);
-        }
-    };
-
-    // Auto-refresh status every 30 seconds
-    useEffect(() => {
-        // Only run if user is authenticated and admin
-        if (!isAuthenticated || !user?.admin) {
-            return;
-        }
-
-        // Add delay to prevent immediate API calls on page load
-        const timer = setTimeout(() => {
-            fetchETLStatus();
-            fetchETLLogs();
-        }, 1000);
-
-        const interval = setInterval(() => {
-            if (etlStatus?.data?.isRunning) {
-                fetchETLStatus();
-            }
-        }, 30000);
-
-        return () => {
-            clearTimeout(timer);
-            clearInterval(interval);
-        };
-    }, [isAuthenticated, user?.admin]); // Add dependencies
-
     return (
         <div className="p-6 w-full">
             {/* Header */}
@@ -180,17 +66,6 @@ export default function AdminETLPage() {
                 </div>
             </div>
 
-            {/* Connection Error Alert */}
-            {hasConnectionError && (
-                <Alert className="mb-6 bg-red-50 border-red-200">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-800">
-                        <strong>Connection Error:</strong> Tidak dapat terhubung ke endpoint ETL. 
-                        Pastikan backend API sudah berjalan dan endpoint ETL tersedia.
-                    </AlertDescription>
-                </Alert>
-            )}
-
             {/* Main ETL Tabs */}
             <Tabs defaultValue="celoe" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -206,16 +81,7 @@ export default function AdminETLPage() {
 
                 {/* CeLOE ETL Tab */}
                 <TabsContent value="celoe" className="space-y-6 mt-6">
-                    <CeLOEETLTab
-                        etlStatus={etlStatus}
-                        etlLogs={etlLogs}
-                        isLoadingStatus={isLoadingStatus}
-                        isLoadingLogs={isLoadingLogs}
-                        logLimit={logLimit}
-                        setLogLimit={setLogLimit}
-                        fetchETLStatus={fetchETLStatus}
-                        fetchETLLogs={fetchETLLogs}
-                    />
+                    <CeLOEETLTab />
                 </TabsContent>
 
                 {/* Chart ETL Tab */}
@@ -226,4 +92,4 @@ export default function AdminETLPage() {
             </Tabs>
         </div>
     );
-} 
+}

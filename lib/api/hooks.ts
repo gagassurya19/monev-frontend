@@ -129,8 +129,8 @@ export function useApiMutation<TData, TVariables = void>(
 
 // Specific hooks for the three API endpoints
 
-import { getCourses, getCourseActivities } from './courses';
-import { getActivityStudents } from './activities';
+import { getCourses, getCourseActivities } from './course';
+import { getActivityStudents } from './activity';
 import { CoursesFilters, ActivitiesFilters, StudentsFilters } from '../types';
 
 /**

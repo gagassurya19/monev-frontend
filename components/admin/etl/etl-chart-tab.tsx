@@ -34,7 +34,7 @@ import {
   Eye 
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { startETLChart, getETLChartLogs, fetchETLChart, streamETLChartLogs, clearStuckETLChart } from '@/lib/api/etl';
+import { startETLChart, getETLChartLogs, fetchETLChart, streamETLChartLogs, clearStuckETLChart } from '@/lib/api/etl-activity';
 import { ETLLog, ETLLogsResponse, ETLStreamData } from '@/lib/types';
 
 export default function ExternalAPIsETLTab() {

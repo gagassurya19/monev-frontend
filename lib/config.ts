@@ -20,25 +20,29 @@ export const isProduction = process.env.NODE_ENV === 'production';
 
 // API endpoints (for reference)
 export const API_ENDPOINTS = {
-  COURSES: '/api/courses',
-  COURSE_ACTIVITIES: (courseId: number) => `/api/courses/${courseId}/activities`,
-  ACTIVITY_STUDENTS: (activityId: number) => `/api/activities/${activityId}/students`,
+  COURSES: '/api/v1/cp/courses',
+  COURSE_ACTIVITIES: (courseId: number) => `/api/v1/cp/${courseId}/activities`,
+  ACTIVITY_DETAIL: (courseId: number, activityId: number, activityType: string) => `/api/v1/cp/${courseId}/${activityType}/${activityId}`,
   ETL: {
-    STATUS: '/api/ETL/status',
-    LOGS: '/api/ETL/logs',
-    RUN: '/api/ETL/run',
-    RUN_INCREMENTAL: '/api/ETL/run_incremental',
-    CLEAR_STUCK: '/api/ETL/clear_stuck',
-    FORCE_CLEAR: '/api/ETL/force_clear',
-    DEBUG: '/api/ETL/debug',
-    // CHART ACTIVITY ETL API
-    CHART_FETCH: '/api/etl/chart/fetch',
-    CHART_LOGS: '/api/etl/chart/logs',
-    CHART_STREAM: '/api/etl/chart/stream',
-    CHART_CLEAR_STUCK: '/api/etl/chart/clear-stuck',
+    COURSE: {
+      STATUS: '/api/v1/cp/etl/status',
+      LOGS: '/api/v1/cp/etl/history',
+      RUN: '/api/v1/cp/etl/run',
+      RUN_INCREMENTAL: '/api/v1/cp/etl/run_incremental',
+      CLEAR_STUCK: '/api/v1/cp/etl/clear_stuck',
+      FORCE_CLEAR: '/api/v1/cp/etl/force_clear',
+    },
+    ACTIVITY: {
+      STATUS: '/api/v1/sas/etl/status',
+      CHART_LOGS: '/api/v1/sas/etl/history',
+      // 
+      CHART_FETCH: '/api/v1/sas/etl/fetch',
+      CHART_STREAM: '/api/v1/sas/etl/stream',
+      CHART_CLEAR_STUCK: '/api/v1/sas/etl/clear-stuck',
+    },
   },
   AUTH: {
-    VALIDATE_TOKEN: '/api/auth/validate-token',
+    VALIDATE_TOKEN: '/api/v1/auth/validate-token',
     USER_PROFILE: '/api/auth/user-profile',
     REFRESH_TOKEN: '/api/auth/refresh-token',
   },

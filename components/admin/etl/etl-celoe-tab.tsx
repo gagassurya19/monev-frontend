@@ -5,48 +5,42 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api-client';
-import { 
-    Database, 
-    Play, 
+import {
+    Database,
+    Play,
     Activity,
     RefreshCw,
     Clock,
-    Settings,
     Loader2,
     AlertTriangle,
     Zap,
-    Bug,
     FileText
 } from 'lucide-react';
-import { useState } from 'react';
-import { API_ENDPOINTS } from '@/lib/config';
-import { ETLStatus, ETLLog, ETLDebugData } from '@/lib/etl-types';
+import { useEffect, useState } from 'react';
+import { ETLStatus, ETLLog } from '@/lib/etl-types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+    getETLStatus,
+    getETLLogs,
+    startFullETL,
+    startIncrementalETL,
+    clearStuckETL,
+    forceClearAllETL
+} from '@/lib/api/etl-course';
+import { formatDateTime, formatDuration } from '@/lib/utils/date-formatter';
 
-interface CeLOEETLTabProps {
-    etlStatus: ETLStatus | null;
-    etlLogs: ETLLog[];
-    isLoadingStatus: boolean;
-    isLoadingLogs: boolean;
-    logLimit: number;
-    setLogLimit: (limit: number) => void;
-    fetchETLStatus: () => void;
-    fetchETLLogs: () => void;
-}
+interface CeLOEETLTabProps {}
 
-export default function CeLOEETLTab({
-    etlStatus,
-    etlLogs,
-    isLoadingStatus,
-    isLoadingLogs,
-    logLimit,
-    setLogLimit,
-    fetchETLStatus,
-    fetchETLLogs
-}: CeLOEETLTabProps) {
+export default function CeLOEETLTab({}: CeLOEETLTabProps) {
+    const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
+    const [etlLogs, setEtlLogs] = useState<ETLLog[]>([]);
+    const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+    const [logLimit, setLogLimit] = useState(10);
+    const [logPage, setLogPage] = useState(1);
+    const [hasConnectionError, setHasConnectionError] = useState(false);
+
     const [isRunningFullETL, setIsRunningFullETL] = useState(false);
     const [isRunningIncrementalETL, setIsRunningIncrementalETL] = useState(false);
     const [isClearingStuck, setIsClearingStuck] = useState(false);
@@ -57,24 +51,56 @@ export default function CeLOEETLTab({
         result?: { action?: string; message?: string };
     } | null>(null);
 
-    // Run Full ETL
-    const runFullETL = async () => {
+    const handleFetchETLStatus = async () => {
+        setIsLoadingStatus(true);
+        try {
+            const response = await getETLStatus();
+            setEtlStatus(response);
+            setHasConnectionError(false);
+        } catch (error: any) {
+            setHasConnectionError(true);
+            if (error.status !== 401) {
+                toast({
+                    title: "Error",
+                    description: error.message || "Failed to fetch ETL status",
+                    variant: "destructive",
+                });
+            }
+            console.error('ETL Status fetch error:', error);
+        } finally {
+            setIsLoadingStatus(false);
+        }
+    };
+
+    const handleFetchETLLogs = async () => {
+        setIsLoadingLogs(true);
+        try {
+            const logs = await getETLLogs(logLimit, logPage);
+            setEtlLogs(logs);
+        } catch (error: any) {
+            if (error.status !== 401) {
+                toast({
+                    title: "Error",
+                    description: error.message || "Failed to fetch ETL logs",
+                    variant: "destructive",
+                });
+            }
+            console.error('ETL Logs fetch error:', error);
+        } finally {
+            setIsLoadingLogs(false);
+        }
+    };
+
+    const handleRunFullETL = async () => {
         setIsRunningFullETL(true);
         try {
-            const response = await apiClient.request(API_ENDPOINTS.ETL.RUN, {
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                },
-                method: 'POST'
-            });
+            await startFullETL();
             toast({
                 title: "ETL Started",
                 description: "Full ETL process has been started in background",
             });
-            // Refresh status after starting
-            setTimeout(() => fetchETLStatus(), 2000);
+            setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
-            // Don't show error toast for 401 errors (authentication issues)
             if (error.status !== 401) {
                 toast({
                     title: "Error",
@@ -88,24 +114,16 @@ export default function CeLOEETLTab({
         }
     };
 
-    // Run Incremental ETL
-    const runIncrementalETL = async () => {
+    const handleRunIncrementalETL = async () => {
         setIsRunningIncrementalETL(true);
         try {
-            const response = await apiClient.request(API_ENDPOINTS.ETL.RUN_INCREMENTAL, {
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                },
-                method: 'POST'
-            });
+            await startIncrementalETL();
             toast({
                 title: "ETL Started",
                 description: "Incremental ETL process has been started in background",
             });
-            // Refresh status after starting
-            setTimeout(() => fetchETLStatus(), 2000);
+            setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
-            // Don't show error toast for 401 errors (authentication issues)  
             if (error.status !== 401) {
                 toast({
                     title: "Error",
@@ -119,28 +137,12 @@ export default function CeLOEETLTab({
         }
     };
 
-    // Clear Stuck ETL Processes
-    const clearStuckETL = async () => {
+    const handleClearStuckETL = async () => {
         setIsClearingStuck(true);
         try {
-            const response: {
-                status: boolean;
-                message?: string;
-                result?: { action?: string; message?: string };
-            } = await apiClient.request(API_ENDPOINTS.ETL.CLEAR_STUCK, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                }
-            });
-            // toast({
-            //     title: response.message || "Success",
-            //     description: response.result?.message || "",
-            //     variant: response.status ? "default" : "destructive",
-            // });
+            const response = await clearStuckETL();
             setLastClearStuckResponse(response);
-            // Refresh status after clearing
-            setTimeout(() => fetchETLStatus(), 2000);
+            setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
             if (error.status !== 401) {
                 toast({
@@ -148,8 +150,7 @@ export default function CeLOEETLTab({
                     description: error.message || "Failed to clear stuck ETL processes",
                     variant: "destructive",
                 });
-
-            setLastClearStuckResponse(error.response);
+                setLastClearStuckResponse(error.response);
             }
             console.error('Clear stuck ETL error:', error);
         } finally {
@@ -157,27 +158,12 @@ export default function CeLOEETLTab({
         }
     };
 
-    // Force Clear All InProgress ETL Processes
-    const forceClearAllETL = async () => {
+    const handleForceClearAllETL = async () => {
         setIsForceClearingAll(true);
         try {
-            const response: {
-                status: boolean;
-                message?: string;
-                result?: { action?: string; message?: string };
-            } = await apiClient.request(API_ENDPOINTS.ETL.FORCE_CLEAR, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                }
-            });
-            // toast({
-            //     title: "Success",
-            //     description: "All inprogress ETL processes cleared successfully",
-            // });
+            const response = await forceClearAllETL();
             setLastClearStuckResponse(response);
-            // Refresh status after clearing
-            setTimeout(() => fetchETLStatus(), 2000);
+            setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
             if (error.status !== 401) {
                 toast({
@@ -186,11 +172,16 @@ export default function CeLOEETLTab({
                     variant: "destructive",
                 });
             }
-            console.error('Force clear all ETL error:', error);
+            console.error('Force clear all ETL error', error);
         } finally {
             setIsForceClearingAll(false);
         }
     };
+
+    useEffect(() => {
+        handleFetchETLStatus();
+        handleFetchETLLogs();
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -207,7 +198,7 @@ export default function CeLOEETLTab({
                             </div>
                             <Button
                                 variant="outline"
-                                onClick={fetchETLStatus}
+                                onClick={handleFetchETLStatus}
                                 disabled={isLoadingStatus}
                             >
                                 {isLoadingStatus ? (
@@ -222,7 +213,7 @@ export default function CeLOEETLTab({
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button
-                                onClick={runFullETL}
+                                onClick={handleRunFullETL}
                                 disabled={isRunningFullETL || etlStatus?.data?.isRunning}
                                 className="h-16"
                             >
@@ -238,7 +229,7 @@ export default function CeLOEETLTab({
                             </Button>
 
                             <Button
-                                onClick={runIncrementalETL}
+                                onClick={handleRunIncrementalETL}
                                 disabled={isRunningIncrementalETL || etlStatus?.data?.isRunning}
                                 variant="secondary"
                                 className="h-16"
@@ -262,7 +253,7 @@ export default function CeLOEETLTab({
             <div className="grid gap-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
-                        onClick={clearStuckETL}
+                        onClick={handleClearStuckETL}
                         disabled={isClearingStuck}
                         variant="outline"
                         className="h-16 border-orange-200 hover:bg-orange-50"
@@ -279,7 +270,7 @@ export default function CeLOEETLTab({
                     </Button>
 
                     <Button
-                        onClick={forceClearAllETL}
+                        onClick={handleForceClearAllETL}
                         disabled={isForceClearingAll}
                         variant="outline"
                         className="h-16 border-red-200 hover:bg-red-50"
@@ -334,7 +325,7 @@ export default function CeLOEETLTab({
                                             <span className="text-sm font-medium">Last Run</span>
                                         </div>
                                         <p className="text-sm text-gray-700">
-                                            {etlStatus.data.lastRun?.start_date || 'Never'}
+                                            {formatDateTime(etlStatus.data.lastRun?.start_date || '') || 'Never'}
                                         </p>
                                     </div>
 
@@ -357,11 +348,15 @@ export default function CeLOEETLTab({
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                             <div>
                                                 <span className="text-gray-600">Start:</span>
-                                                <p className="font-medium">{etlStatus.data.lastRun.start_date}</p>
+                                                <p className="font-medium">
+                                                    {formatDateTime(etlStatus.data.lastRun.start_date)}
+                                                </p>
                                             </div>
                                             <div>
                                                 <span className="text-gray-600">End:</span>
-                                                <p className="font-medium">{etlStatus.data.lastRun.end_date}</p>
+                                                <p className="font-medium">
+                                                    {formatDateTime(etlStatus.data.lastRun.end_date)}
+                                                </p>
                                             </div>
                                             <div>
                                                 <span className="text-gray-600">Status:</span>
@@ -413,7 +408,7 @@ export default function CeLOEETLTab({
                                 </div>
                                 <Button
                                     variant="outline"
-                                    onClick={fetchETLLogs}
+                                    onClick={handleFetchETLLogs}
                                     disabled={isLoadingLogs}
                                 >
                                     {isLoadingLogs ? (
@@ -437,15 +432,19 @@ export default function CeLOEETLTab({
                                                     {log.status}
                                                 </Badge>
                                                 <span className="text-sm text-gray-600">ID: {log.id}</span>
-                                                <span className="text-xs text-gray-500">({log.created_at})</span>
+                                                <span className="text-xs text-gray-500">
+                                                    {formatDateTime(log.created_at)}
+                                                </span>
                                             </div>
-                                            <span className="text-sm text-gray-500">{log.start_date}</span>
+                                            <span className="text-sm text-gray-500">
+                                                {formatDateTime(log.start_date)}
+                                            </span>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                             <div>
                                                 <span className="text-gray-600">Duration:</span>
                                                 <p className="font-medium">
-                                                    {log.duration || 'N/A'}
+                                                    {formatDuration(log.duration || '')}
                                                 </p>
                                             </div>
                                             <div>
@@ -458,7 +457,9 @@ export default function CeLOEETLTab({
                                             </div>
                                             <div>
                                                 <span className="text-gray-600">End:</span>
-                                                <p className="font-medium">{log.end_date || 'N/A'}</p>
+                                                <p className="font-medium">
+                                                    {formatDateTime(log.end_date || '')}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -485,4 +486,4 @@ export default function CeLOEETLTab({
             )}
         </div>
     );
-} 
+}

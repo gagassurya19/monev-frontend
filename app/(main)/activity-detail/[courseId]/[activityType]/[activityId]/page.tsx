@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getCourseActivities, getActivityStudents } from "@/lib/api"
+import { getCourseActivities, getActivityStudents, getActivityDetail, getETLStatus } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { API_CONFIG, API_ENDPOINTS } from "@/lib/config"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -145,19 +145,8 @@ export default function ActivityDetailPage() {
     const fetchETLStatus = async () => {
         try {
             setEtlLoading(true)
-            // ETL endpoint uses special webhook token, not auth token
-            const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL.STATUS, {
-                headers: {
-                    'Authorization': 'Bearer default-webhook-token-change-this'
-                }
-            })
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
-            }
-
-            const data = await response.json()
-            setEtlStatus(data)
+            const response = await getETLStatus()
+            setEtlStatus(response)
         } catch (error) {
             console.error('Error fetching ETL status:', error)
         } finally {
@@ -171,70 +160,71 @@ export default function ActivityDetailPage() {
     }, [])
 
     // Load activity and student data
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true)
-                setError(null)
+    const loadData = useCallback(async () => {
+        try {
+            setLoading(true)
+            setError(null)
 
-                // Load activity info
-                const activitiesResponse = await getCourseActivities(courseId, {
-                    activity_type: activityType,
-                    activity_id: activityId,
-                    limit: 50
-                })
-
-                const currentActivity = activitiesResponse.data[0] as ActivitySummary
-                console.log(currentActivity)
-
-                if (!currentActivity) {
-                    throw new Error(`Activity with ID ${activityId} and type ${activityType} not found in course ${courseId}`)
-                }
-
-                setActivity(currentActivity)
-
-                // Set course info from API response
-                if (activitiesResponse.course_info) {
-                    setCourseInfo(activitiesResponse.course_info)
-                }
-
-                // Load students for this activity
-                const studentsResponse = await getActivityStudents(
-                    Number(currentActivity.activity_id), // Convert to number
-                    currentActivity.activity_type as any,
-                    {
-                        activity_type: currentActivity.activity_type as any,
-                        page: currentPage,
-                        limit: itemsPerPage,
-                        search: searchTerm || undefined,
-                        sort_by: sortBy as any,
-                        sort_order: sortOrder
-                    }
-                )
-
-                setStudents(studentsResponse.data)
-
-                // Update pagination info
-                if (studentsResponse.pagination) {
-                    setPaginationInfo(studentsResponse.pagination)
-                    setTotalPages(studentsResponse.pagination.total_pages)
-                    setTotalItems(studentsResponse.pagination.total_items)
-                    setCurrentPage(studentsResponse.pagination.current_page)
-                    setItemsPerPage(studentsResponse.pagination.items_per_page)
-                }
-
-            } catch (error) {
-                console.error("Error loading activity detail:", error)
-                setError(error instanceof Error ? error.message : "Failed to load activity details")
-            } finally {
-                setLoading(false)
+            // Load activity info using the new getActivityDetail function
+            const activityResponse = await getActivityDetail(courseId, activityId, activityType, 50)
+            
+            if (!activityResponse.info || !activityResponse.info.activity) {
+                throw new Error(`Activity with ID ${activityId} and type ${activityType} not found in course ${courseId}`)
             }
-        }
 
+            // Set activity data from the new structure
+            setActivity(activityResponse.info.activity)
+            
+            // Set course info from the new structure
+            if (activityResponse.info.course) {
+                setCourseInfo(activityResponse.info.course)
+            }
+
+            // Use student data directly from activitiesResponse
+            if (activityResponse.students && activityResponse.students.data) {
+                const studentData = Array.isArray(activityResponse.students.data) 
+                    ? activityResponse.students.data 
+                    : [activityResponse.students.data];
+                
+                // Add activity_type to each student record
+                const extendedStudentData: ExtendedStudentData[] = studentData.map(student => ({
+                    ...student,
+                    activity_type: activityType,
+                    waktu_selesai: student.waktu_selesai || '',
+                    jumlah_dikerjakan: student.jumlah_dikerjakan || 0,
+                    jumlah_soal: student.jumlah_soal || 0,
+                    status_pengerjaan: student.status_pengerjaan || ''
+                }));
+                
+                setStudents(extendedStudentData)
+                
+                // Update pagination info from the new structure
+                if (activityResponse.students.pagination) {
+                    setPaginationInfo(activityResponse.students.pagination)
+                    setTotalPages(activityResponse.students.pagination.total_pages)
+                    setTotalItems(activityResponse.students.pagination.total_items)
+                    setCurrentPage(activityResponse.students.pagination.current_page)
+                    setItemsPerPage(activityResponse.students.pagination.items_per_page)
+                }
+            }
+
+            // Also refresh ETL status
+            await fetchETLStatus()
+
+        } catch (error) {
+            console.error("Error loading activity detail:", error)
+            setError(error instanceof Error ? error.message : "Failed to load activity details")
+        } finally {
+            setLoading(false)
+        }
+    }, [courseId, activityType, activityId, currentPage, itemsPerPage, searchTerm, sortBy, sortOrder])
+
+    // Load activity and student data
+    useEffect(() => {
         if (courseId && activityType && activityId) {
             loadData()
         }
-    }, [courseId, activityType, activityId, currentPage, itemsPerPage, searchTerm, sortBy, sortOrder])
+    }, [loadData])
 
     // Since API handles filtering and sorting, we use students directly
     const filteredAndSortedStudents = students
@@ -581,67 +571,6 @@ export default function ActivityDetailPage() {
     // Refresh data function
     const handleRefresh = async () => {
         if (courseId && activityType && activityId) {
-            setLoading(true)
-            const loadData = async () => {
-                try {
-                    setError(null)
-
-                    // Load activity info
-                    const activitiesResponse = await getCourseActivities(courseId, {
-                        activity_type: activityType,
-                        activity_id: activityId,
-                        limit: 50
-                    })
-
-                    const currentActivity = activitiesResponse.data[0] as ActivitySummary
-
-                    if (!currentActivity) {
-                        throw new Error(`Activity with ID ${activityId} and type ${activityType} not found in course ${courseId}`)
-                    }
-
-                    setActivity(currentActivity)
-
-                    // Set course info from API response
-                    if (activitiesResponse.course_info) {
-                        setCourseInfo(activitiesResponse.course_info)
-                    }
-
-                    // Load students for this activity
-                    const studentsResponse = await getActivityStudents(
-                        Number(currentActivity.activity_id),
-                        currentActivity.activity_type as any,
-                        {
-                            activity_type: currentActivity.activity_type as any,
-                            page: currentPage,
-                            limit: itemsPerPage,
-                            search: searchTerm || undefined,
-                            sort_by: sortBy as any,
-                            sort_order: sortOrder
-                        }
-                    )
-
-                    setStudents(studentsResponse.data)
-
-                    // Update pagination info
-                    if (studentsResponse.pagination) {
-                        setPaginationInfo(studentsResponse.pagination)
-                        setTotalPages(studentsResponse.pagination.total_pages)
-                        setTotalItems(studentsResponse.pagination.total_items)
-                        setCurrentPage(studentsResponse.pagination.current_page)
-                        setItemsPerPage(studentsResponse.pagination.items_per_page)
-                    }
-
-                    // Also refresh ETL status
-                    await fetchETLStatus()
-
-                } catch (error) {
-                    console.error("Error refreshing activity detail:", error)
-                    setError(error instanceof Error ? error.message : "Failed to refresh activity details")
-                } finally {
-                    setLoading(false)
-                }
-            }
-
             await loadData()
         }
     }

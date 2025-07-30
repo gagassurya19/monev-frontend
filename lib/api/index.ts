@@ -1,7 +1,9 @@
 // Export all API functions
-export * from './courses';
-export * from './activities';
-export * from './etl';
+export * from './course';
+export * from './etl-course'
+export * from './activity';
+export * from './etl-activity';
+
 
 // Export API client and types
 export { apiClient, ApiClient, ApiError } from '../api-client';
