@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Loader2,
   RefreshCw,
-  Key
+  Key,
+  LogIn
 } from 'lucide-react';
 
 interface AuthGuardProps {
@@ -74,32 +75,39 @@ const UnauthorizedScreen: React.FC<{ error?: string | null }> = ({ error }) => (
           
           <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
             <code className="text-sm break-all">
-              {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/?token=YOUR_JWT_TOKEN
+              {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/?token=YOUR_TOKEN
             </code>
           </div>
           
           <div className="text-xs text-gray-500 dark:text-gray-400">
             <p>
-              <strong>Catatan:</strong> Token akan kadaluarsa setelah 5 menit untuk tujuan keamanan.
+              <strong>Catatan:</strong> Token akan dihapus setelah digunakan untuk tujuan keamanan.
             </p>
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          <Button 
-            onClick={() => window.location.href = '/token-generator'}
-            className="w-full"
+          <Button
+            variant='outline'
+            onClick={() => window.location.href = '/login'}
           >
-            <Key className="w-4 h-4 mr-2" />
-            Generate Test Token (Testing only)
+            <LogIn className="w-4 h-4 mr-2" />
+             Admin Login
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
             onClick={() => window.location.reload()}
             className="w-full"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Ulangi Autentikasi
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => window.location.href = '/token-generator'}
+            className="w-full"
+          >
+            <Key className="w-4 h-4 mr-2" />
+            Generate Test Token (Testing only)
           </Button>
         </div>
       </CardContent>
@@ -197,7 +205,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { isAuthenticated, isLoading, error } = useAuth();
   
   // Routes that don't require authentication
-  const publicRoutes = ['/token-generator'];
+  const publicRoutes = ['/token-generator', '/login'];
   
   // Check if current route is public
   const isPublicRoute = React.useMemo(() => {

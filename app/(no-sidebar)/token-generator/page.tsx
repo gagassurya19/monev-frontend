@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { JWTGenerator } from '@/lib/jwt-generator';
 import { AppHeader } from '@/components/app-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { MataKuliahMultiSelect } from '@/components/matkul-multiselect';
 import { MatkulFilterOption } from '@/lib/types';
+import { getFakultas, getProdi } from '@/lib/api/activity';
 
 export default function TokenGeneratorPage() {
   const { user, isAuthenticated } = useAuth();
@@ -41,29 +42,176 @@ export default function TokenGeneratorPage() {
   const [copySuccess, setCopySuccess] = useState<string>('');
   const [selectedMatkul, setSelectedMatkul] = useState<MatkulFilterOption[]>([]);
 
+  // API-based filter state
+  const [kampusOptions, setKampusOptions] = useState<Array<{ id: string, name: string }>>([]);
+  const [fakultasOptions, setFakultasOptions] = useState<Array<{ id: string, name: string }>>([]);
+  const [prodiOptions, setProdiOptions] = useState<Array<{ id: string, name: string }>>([]);
+  const [kampusLoading, setKampusLoading] = useState(false);
+  const [fakultasLoading, setFakultasLoading] = useState(false);
+  const [prodiLoading, setProdiLoading] = useState(false);
+
+  // Get kampus code for API
+  const getKampusCode = (university: string) => {
+    switch (university) {
+      case "TEL-U BANDUNG": return "bdg";
+      case "TEL-U SURABAYA": return "sby";
+      case "TEL-U JAKARTA": return "jkt";
+      case "TEL-U PURWOKERTO": return "pwt";
+      default: return "bdg";
+    }
+  };
+
+  // Fetch kampus data
+  const fetchKampus = async () => {
+    try {
+      setKampusLoading(true);
+      // For now, use static data since getKampus() returns static data
+      const kampusData = [
+        { id: "bdg", name: "TEL-U BANDUNG" },
+        { id: "sby", name: "TEL-U SURABAYA" },
+        { id: "jkt", name: "TEL-U JAKARTA" },
+        { id: "pwt", name: "TEL-U PURWOKERTO" }
+      ];
+      setKampusOptions(kampusData);
+    } catch (error) {
+      console.error('Error fetching kampus:', error);
+      // Fallback to static data if API fails
+      setKampusOptions([
+        { id: "bdg", name: "TEL-U BANDUNG" },
+        { id: "sby", name: "TEL-U SURABAYA" },
+        { id: "jkt", name: "TEL-U JAKARTA" },
+        { id: "pwt", name: "TEL-U PURWOKERTO" }
+      ]);
+    } finally {
+      setKampusLoading(false);
+    }
+  };
+
+  // Fetch fakultas data
+  const fetchFakultas = async (kampusCode: string) => {
+    if (!kampusCode) return;
+
+    try {
+      setFakultasLoading(true);
+      const response = await getFakultas();
+
+      if (response.status && response.data) {
+        // Transform FilterOption to our expected format
+        const transformedData = response.data.map(item => ({
+          id: item.category_id.toString(),
+          name: item.category_name
+        }));
+        setFakultasOptions(transformedData);
+      }
+    } catch (error) {
+      console.error('Error fetching fakultas:', error);
+      // Fallback to static data if API fails
+      setFakultasOptions([
+        { id: "305", name: "Fakultas Ekonomi Bisnis" },
+        { id: "fik", name: "Fakultas Ilmu Komunikasi" }
+      ]);
+    } finally {
+      setFakultasLoading(false);
+    }
+  };
+
+  // Fetch prodi data
+  const fetchProdi = async (fakultasId: string, kampusCode: string) => {
+    if (!fakultasId || !kampusCode) return;
+
+    try {
+      setProdiLoading(true);
+      const response = await getProdi(fakultasId, kampusCode);
+
+      if (response.status && response.data) {
+        // Transform FilterOption to our expected format
+        const transformedData = response.data.map(item => ({
+          id: item.category_id.toString(),
+          name: item.category_name
+        }));
+        setProdiOptions(transformedData);
+      }
+    } catch (error) {
+      console.error('Error fetching prodi:', error);
+      // Fallback to static data if API fails
+      setProdiOptions([
+        { id: "318", name: "PRODI S1 ADMINISTRASI BISNIS (FEB)" },
+        { id: "s1-komunikasi", name: "S1 Komunikasi" }
+      ]);
+    } finally {
+      setProdiLoading(false);
+    }
+  };
+
+  // Handle kampus change
+  const handleKampusChange = (value: string) => {
+    setKampus(value);
+    // Reset lower levels when kampus changes
+    setFakultas('');
+    setProdi('');
+    setSelectedMatkul([]);
+    setProdiOptions([]);
+
+    // Fetch fakultas for the selected kampus
+    fetchFakultas(value);
+  };
+
+  // Handle fakultas change
+  const handleFakultasChange = (value: string) => {
+    setFakultas(value);
+    // Reset lower levels when fakultas changes
+    setProdi('');
+    setSelectedMatkul([]);
+    setProdiOptions([]);
+
+    // Fetch prodi for the selected fakultas
+    if (value && kampus) {
+      fetchProdi(value, kampus);
+    }
+  };
+
+  // Load kampus data on component mount
+  useEffect(() => {
+    fetchKampus();
+  }, []);
+
+  // Load fakultas when kampus is selected
+  useEffect(() => {
+    if (kampus) {
+      fetchFakultas(kampus);
+    }
+  }, [kampus]);
+
+  // Load prodi when fakultas is selected
+  useEffect(() => {
+    if (fakultas && kampus) {
+      fetchProdi(fakultas, kampus);
+    }
+  }, [fakultas, kampus]);
+
   // Check if user is admin
-//   if (!isAuthenticated || !user?.admin) {
-//     return (
-//         <div className="flex items-center justify-center min-h-screen p-4">
-//             <Card className="w-full max-w-md">
-//                 <CardHeader className="text-center">
-//                     <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-//                         <Lock className="w-6 h-6 text-red-600" />
-//                     </div>
-//                     <CardTitle className="text-red-600">Access Denied</CardTitle>
-//                     <CardDescription>
-//                         This page is only accessible to admin users
-//                     </CardDescription>
-//                 </CardHeader>
-//                 <CardContent className="text-center">
-//                     <p className="text-sm text-gray-600">
-//                         {!isAuthenticated ? 'Please log in to continue' : 'You do not have admin privileges'}
-//                     </p>
-//                 </CardContent>
-//             </Card>
-//         </div>
-//     );
-// }
+  //   if (!isAuthenticated || !user?.admin) {
+  //     return (
+  //         <div className="flex items-center justify-center min-h-screen p-4">
+  //             <Card className="w-full max-w-md">
+  //                 <CardHeader className="text-center">
+  //                     <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+  //                         <Lock className="w-6 h-6 text-red-600" />
+  //                     </div>
+  //                     <CardTitle className="text-red-600">Access Denied</CardTitle>
+  //                     <CardDescription>
+  //                         This page is only accessible to admin users
+  //                     </CardDescription>
+  //                 </CardHeader>
+  //                 <CardContent className="text-center">
+  //                     <p className="text-sm text-gray-600">
+  //                         {!isAuthenticated ? 'Please log in to continue' : 'You do not have admin privileges'}
+  //                     </p>
+  //                 </CardContent>
+  //             </Card>
+  //         </div>
+  //     );
+  // }
 
   const generateToken = () => {
     if (!username.trim()) {
@@ -213,37 +361,52 @@ export default function TokenGeneratorPage() {
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="kampus">Kampus</Label>
-                      <Select value={kampus} onValueChange={(value) => setKampus(value)}>
+                      <Select value={kampus} onValueChange={handleKampusChange} disabled={kampusLoading}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select Kampus" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="bdg">TELYU Bandung</SelectItem>
-                          <SelectItem value="pwt">TELYU Purwokerto</SelectItem>
+                          {kampusLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            kampusOptions.map(k => (
+                              <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="fakultas">Fakultas</Label>
-                      <Select value={fakultas} onValueChange={(value) => setFakultas(value)}>
+                      <Select value={fakultas} onValueChange={handleFakultasChange} disabled={fakultasLoading || !kampus}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder={kampus ? "Select Fakultas" : "Select Kampus first"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="305">Fakultas Ekonomi Bisnis</SelectItem>
-                          <SelectItem value="fik">Fakultas Ilmu Komunikasi</SelectItem>
+                          {fakultasLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            fakultasOptions.map(f => (
+                              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="prodi">Prodi</Label>
-                      <Select value={prodi} onValueChange={(value) => setProdi(value)}>
+                      <Select value={prodi} onValueChange={(value) => setProdi(value)} disabled={prodiLoading || !fakultas}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder={fakultas ? "Select Prodi" : "Select Fakultas first"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="318">PRODI S1 ADMINISTRASI BISNIS (FEB)</SelectItem>
-                          <SelectItem value="s1-komunikasi">S1 Komunikasi</SelectItem>
+                          {prodiLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            prodiOptions.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

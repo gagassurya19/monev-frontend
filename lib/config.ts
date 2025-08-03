@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     },
   },
   AUTH: {
+    LOGIN_ADMIN: '/api/v1/auth/login-admin',
     VALIDATE_TOKEN: '/api/v1/auth/validate-token',
     USER_PROFILE: '/api/auth/user-profile',
     REFRESH_TOKEN: '/api/auth/refresh-token',
