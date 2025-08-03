@@ -10,8 +10,6 @@ import {
   BookOpen,
   BarChart3,
   Database,
-  TestTube,
-  Key,
   ArrowRight,
   Users,
   Activity
@@ -36,29 +34,13 @@ export default function Home() {
       color: "text-green-600"
     },
     {
-      title: "Admin ETL",
+      title: "Admin Dashboard",
       description: "Kelola sinkronisasi data sistem",
-      href: "/admin/etl",
+      href: "/admin",
       icon: Database,
-      color: "text-purple-600",
+      color: "text-red-600",
       adminOnly: true
     },
-    {
-      title: "API Test",
-      description: "Testing endpoint API CeLOE",
-      href: "/api-test",
-      icon: TestTube,
-      color: "text-orange-600",
-      adminOnly: true
-    },
-    {
-      title: "Token Generator",
-      description: "Generate JWT token untuk development",
-      href: "/token-generator",
-      icon: Key,
-      color: "text-gray-600",
-      adminOnly: true
-    }
   ]
 
   return (
@@ -125,7 +107,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
+          {features.filter(feature => !feature.adminOnly || (feature.adminOnly && user?.admin)).map((feature, index) => (
             <Card key={index} className="group hover:shadow-md transition-all duration-200 border border-gray-200">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-3">
@@ -156,28 +138,6 @@ export default function Home() {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-8 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>
-                {user?.admin ? '5' : '4'} Features Available
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>
-                {isAuthenticated ? 'Authenticated' : 'Guest Mode'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span>Telkom University</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

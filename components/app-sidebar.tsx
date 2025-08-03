@@ -109,7 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     signOut()
   }
 
-  // Add admin ETL page for admin users
+  // Add admin page for admin users
   const getNavItems = () => {
     const baseItems = data.navMain;
     
@@ -117,8 +117,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return [
         ...baseItems,
         {
-          title: "Admin ETL",
-          url: "/admin/etl",
+          title: "Admin",
+          url: "/admin",
           icon: Database,
         }
       ];

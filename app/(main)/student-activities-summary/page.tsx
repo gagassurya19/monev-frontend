@@ -23,12 +23,20 @@ import { ActivityChart, generateSampleData } from "@/components/activity-chart";
 import ClientDate from "@/components/ClientDate";
 import { API_CONFIG, API_ENDPOINTS } from "@/lib/config";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { FilterDropdown } from "@/components/filter-dropdown";
 
 interface AppliedFilters {
   university: string;
+  universityCode: string;
   fakultas: string;
+  fakultasId: string;
+  fakultasName: string;
   prodi: string;
+  prodiId: string;
+  prodiName: string;
   mataKuliah: string;
+  mataKuliahId: string;
+  mataKuliahName: string;
 }
 
 interface CourseData {
@@ -78,10 +86,22 @@ export default function StudentActivitesSummaryPage() {
   const [currentLevel, setCurrentLevel] = useState(1); // 1=kampus, 2=fakultas, 3=prodi, 4=mata kuliah
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>({
     university: "TEL-U BANDUNG",
+    universityCode: "bdg",
     fakultas: "",
+    fakultasId: "",
+    fakultasName: "",
     prodi: "",
-    mataKuliah: ""
+    prodiId: "",
+    prodiName: "",
+    mataKuliah: "",
+    mataKuliahId: "",
+    mataKuliahName: ""
   });
+  
+  // API-based filter state
+  const [selectedFakultasId, setSelectedFakultasId] = useState("");
+  const [selectedProdiId, setSelectedProdiId] = useState("");
+  const [selectedMataKuliahId, setSelectedMataKuliahId] = useState("");
 
   // Table state
   const [courseData, setCourseData] = useState<CourseData[]>([]);
@@ -101,7 +121,7 @@ export default function StudentActivitesSummaryPage() {
     try {
       setEtlLoading(true)
       // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL.STATUS, {
+      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.SAS.ETL.STATUS, {
         headers: {
           'Authorization': 'Bearer default-webhook-token-change-this'
         }
@@ -133,9 +153,12 @@ export default function StudentActivitesSummaryPage() {
         const parsed = JSON.parse(savedFilters);
         setAppliedFilters(parsed);
         setSelectedUniversity(parsed.university);
-        setSelectedFakultas(parsed.fakultas);
-        setSelectedProdi(parsed.prodi);
-        setSelectedMataKuliah(parsed.mataKuliah);
+        setSelectedFakultas(parsed.fakultasName || parsed.fakultas);
+        setSelectedFakultasId(parsed.fakultasId || parsed.fakultas);
+        setSelectedProdi(parsed.prodiName || parsed.prodi);
+        setSelectedProdiId(parsed.prodiId || parsed.prodi);
+        setSelectedMataKuliah(parsed.mataKuliahName || parsed.mataKuliah);
+        setSelectedMataKuliahId(parsed.mataKuliahId || parsed.mataKuliah);
 
         // Set current level based on applied filters
         if (parsed.mataKuliah) setCurrentLevel(4);
@@ -155,88 +178,15 @@ export default function StudentActivitesSummaryPage() {
     "TEL-U PURWOKERTO"
   ];
 
-  const fakultasData = {
-    "TEL-U BANDUNG": ["Fakultas Teknik Elektro", "Fakultas Informatika", "Fakultas Ekonomi Bisnis"],
-    "TEL-U SURABAYA": ["Fakultas Teknik Industri", "Fakultas Digital Business", "Fakultas Sains"],
-    "TEL-U JAKARTA": ["Fakultas Komunikasi", "Fakultas Teknik", "Fakultas Bisnis"],
-    "TEL-U PURWOKERTO": ["Fakultas Engineering", "Fakultas Digital Technology", "Fakultas Management"]
-  };
-
-  const prodiData = {
-    "Fakultas Teknik Elektro": ["Teknik Elektro", "Teknik Telekomunikasi", "Teknik Fisika"],
-    "Fakultas Informatika": ["Teknik Informatika", "Sistem Informasi", "Teknologi Informasi"],
-    "Fakultas Ekonomi Bisnis": ["Manajemen", "Akuntansi", "Ekonomi Pembangunan"],
-    "Fakultas Teknik Industri": ["Teknik Industri", "Teknik Logistik", "Teknik Sistem"],
-    "Fakultas Digital Business": ["Digital Business", "E-Commerce", "Digital Marketing"],
-    "Fakultas Sains": ["Matematika", "Fisika", "Kimia"],
-    "Fakultas Komunikasi": ["Ilmu Komunikasi", "Broadcasting", "Public Relations"],
-    "Fakultas Teknik": ["Teknik Sipil", "Teknik Mesin", "Teknik Komputer"],
-    "Fakultas Bisnis": ["Bisnis Digital", "Kewirausahaan", "International Business"],
-    "Fakultas Engineering": ["Software Engineering", "Computer Engineering", "Network Engineering"],
-    "Fakultas Digital Technology": ["Data Science", "Artificial Intelligence", "Cybersecurity"],
-    "Fakultas Management": ["Strategic Management", "Human Resource", "Operations Management"]
-  };
-
-  const mataKuliahData = {
-    // Fakultas Teknik Elektro
-    "Teknik Elektro": ["Rangkaian Listrik", "Elektronika Daya", "Sistem Kontrol", "Mesin Listrik"],
-    "Teknik Telekomunikasi": ["Sinyal dan Sistem", "Komunikasi Digital", "Antena dan Propagasi", "Jaringan Telekomunikasi"],
-    "Teknik Fisika": ["Fisika Modern", "Instrumentasi", "Material Engineering", "Nanoteknologi"],
-
-    // Fakultas Informatika
-    "Teknik Informatika": ["Algoritma Pemrograman", "Basis Data", "Jaringan Komputer", "Machine Learning"],
-    "Sistem Informasi": ["Analisis Sistem", "Manajemen Proyek TI", "Enterprise Architecture", "Business Intelligence"],
-    "Teknologi Informasi": ["Cloud Computing", "Internet of Things", "Mobile Development", "Cybersecurity"],
-
-    // Fakultas Ekonomi Bisnis
-    "Manajemen": ["Manajemen Strategis", "Manajemen Operasi", "Manajemen Keuangan", "Manajemen SDM"],
-    "Akuntansi": ["Akuntansi Dasar", "Audit", "Perpajakan", "Akuntansi Manajemen"],
-    "Ekonomi Pembangunan": ["Mikroekonomi", "Makroekonomi", "Ekonomi Pembangunan", "Ekonomi Regional"],
-
-    // Fakultas Teknik Industri
-    "Teknik Industri": ["Sistem Produksi", "Ergonomi", "Penelitian Operasi", "Manajemen Kualitas"],
-    "Teknik Logistik": ["Supply Chain Management", "Transportasi", "Warehouse Management", "Distribution"],
-    "Teknik Sistem": ["Analisis Sistem", "Optimasi Sistem", "Sistem Dinamik", "System Engineering"],
-
-    // Fakultas Digital Business
-    "Digital Business": ["E-Business Strategy", "Digital Marketing", "Digital Innovation", "Business Analytics"],
-    "E-Commerce": ["Online Marketing", "Payment Systems", "Platform Management", "Customer Experience"],
-    "Digital Marketing": ["Social Media Marketing", "SEO/SEM", "Content Marketing", "Marketing Analytics"],
-
-    // Fakultas Sains
-    "Matematika": ["Kalkulus", "Aljabar Linear", "Statistika", "Matematika Diskrit"],
-    "Fisika": ["Mekanika", "Termodinamika", "Elektromagnetik", "Fisika Kuantum"],
-    "Kimia": ["Kimia Organik", "Kimia Anorganik", "Kimia Fisik", "Kimia Analitik"],
-
-    // Fakultas Komunikasi
-    "Ilmu Komunikasi": ["Teori Komunikasi", "Komunikasi Massa", "Public Relations", "Jurnalistik"],
-    "Broadcasting": ["Produksi TV", "Radio Broadcasting", "Media Digital", "Multimedia"],
-    "Public Relations": ["Strategic PR", "Crisis Management", "Event Management", "Corporate Communication"],
-
-    // Fakultas Teknik
-    "Teknik Sipil": ["Struktur Bangunan", "Geoteknik", "Hidraulika", "Manajemen Konstruksi"],
-    "Teknik Mesin": ["Termodinamika", "Mekanika Fluida", "Material Teknik", "Manufaktur"],
-    "Teknik Komputer": ["Arsitektur Komputer", "Embedded Systems", "Digital Design", "Mikroprosesor"],
-
-    // Fakultas Bisnis
-    "Bisnis Digital": ["Digital Strategy", "E-Business", "Digital Transformation", "Innovation Management"],
-    "Kewirausahaan": ["Business Plan", "Startup Management", "Venture Capital", "Innovation"],
-    "International Business": ["Global Marketing", "International Trade", "Cross-Cultural Management", "Export-Import"],
-
-    // Fakultas Engineering
-    "Software Engineering": ["Software Design", "Testing", "Project Management", "Agile Development"],
-    "Computer Engineering": ["Computer Architecture", "Embedded Systems", "VLSI Design", "Hardware Design"],
-    "Network Engineering": ["Network Design", "Network Security", "Wireless Networks", "Network Management"],
-
-    // Fakultas Digital Technology
-    "Data Science": ["Statistics", "Machine Learning", "Big Data", "Data Visualization"],
-    "Artificial Intelligence": ["Neural Networks", "Deep Learning", "NLP", "Computer Vision"],
-    "Cybersecurity": ["Network Security", "Cryptography", "Ethical Hacking", "Security Management"],
-
-    // Fakultas Management
-    "Strategic Management": ["Corporate Strategy", "Business Planning", "Strategic Analysis", "Leadership"],
-    "Human Resource": ["HR Planning", "Recruitment", "Performance Management", "Training & Development"],
-    "Operations Management": ["Production Planning", "Quality Control", "Inventory Management", "Process Improvement"]
+  // Get kampus code for API
+  const getKampusCode = (university: string) => {
+    switch (university) {
+      case "TEL-U BANDUNG": return "bdg";
+      case "TEL-U SURABAYA": return "sby";
+      case "TEL-U JAKARTA": return "jkt";
+      case "TEL-U PURWOKERTO": return "pwt";
+      default: return "bdg";
+    }
   };
 
   const handleAddNextLevel = () => {
@@ -251,41 +201,68 @@ export default function StudentActivitesSummaryPage() {
     if (levelToRemove === 2) {
       // Remove fakultas and all below
       setSelectedFakultas("");
+      setSelectedFakultasId("");
       setSelectedProdi("");
+      setSelectedProdiId("");
       setSelectedMataKuliah("");
+      setSelectedMataKuliahId("");
       setCurrentLevel(1);
       
       // Auto-apply kampus filter when removing fakultas
       newFilters = {
         university: selectedUniversity,
+        universityCode: getKampusCode(selectedUniversity),
         fakultas: "",
+        fakultasId: "",
+        fakultasName: "",
         prodi: "",
-        mataKuliah: ""
+        prodiId: "",
+        prodiName: "",
+        mataKuliah: "",
+        mataKuliahId: "",
+        mataKuliahName: ""
       };
     } else if (levelToRemove === 3) {
       // Remove prodi and all below
       setSelectedProdi("");
+      setSelectedProdiId("");
       setSelectedMataKuliah("");
+      setSelectedMataKuliahId("");
       setCurrentLevel(2);
 
       // Auto-apply current filters up to fakultas level
       newFilters = {
         university: selectedUniversity,
+        universityCode: getKampusCode(selectedUniversity),
         fakultas: selectedFakultas,
+        fakultasId: selectedFakultasId,
+        fakultasName: selectedFakultas,
         prodi: "",
-        mataKuliah: ""
+        prodiId: "",
+        prodiName: "",
+        mataKuliah: "",
+        mataKuliahId: "",
+        mataKuliahName: ""
       };
     } else if (levelToRemove === 4) {
       // Remove mata kuliah
       setSelectedMataKuliah("");
+      setSelectedMataKuliahId("");
       setCurrentLevel(3);
 
       // Auto-apply current filters up to prodi level
       newFilters = {
         university: selectedUniversity,
+        universityCode: getKampusCode(selectedUniversity),
         fakultas: selectedFakultas,
+        fakultasId: selectedFakultasId,
+        fakultasName: selectedFakultas,
         prodi: selectedProdi,
-        mataKuliah: ""
+        prodiId: selectedProdiId,
+        prodiName: selectedProdi,
+        mataKuliah: "",
+        mataKuliahId: "",
+        mataKuliahName: ""
       };
     }
 
@@ -298,69 +275,106 @@ export default function StudentActivitesSummaryPage() {
     setSelectedUniversity(value);
     // Reset lower levels when university changes
     setSelectedFakultas("");
+    setSelectedFakultasId("");
     setSelectedProdi("");
+    setSelectedProdiId("");
     setSelectedMataKuliah("");
+    setSelectedMataKuliahId("");
     setCurrentLevel(1);
 
     // Auto-apply the university filter
     const newFilters = {
       university: value,
+      universityCode: getKampusCode(value),
       fakultas: "",
+      fakultasId: "",
+      fakultasName: "",
       prodi: "",
-      mataKuliah: ""
+      prodiId: "",
+      prodiName: "",
+      mataKuliah: "",
+      mataKuliahId: "",
+      mataKuliahName: ""
     };
 
     setAppliedFilters(newFilters);
     localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
-  const handleFakultasChange = (value: string) => {
-    setSelectedFakultas(value);
+  const handleFakultasChange = (value: string, displayName?: string) => {
+    setSelectedFakultasId(value);
+    setSelectedFakultas(displayName || value);
     // Reset lower levels when fakultas changes
     setSelectedProdi("");
+    setSelectedProdiId("");
     setSelectedMataKuliah("");
+    setSelectedMataKuliahId("");
     setCurrentLevel(2);
 
     // Auto-apply the filters up to fakultas level
     const newFilters = {
       university: selectedUniversity,
-      fakultas: value,
+      universityCode: getKampusCode(selectedUniversity),
+      fakultas: displayName || value,
+      fakultasId: value,
+      fakultasName: displayName || value,
       prodi: "",
-      mataKuliah: ""
+      prodiId: "",
+      prodiName: "",
+      mataKuliah: "",
+      mataKuliahId: "",
+      mataKuliahName: ""
     };
 
     setAppliedFilters(newFilters);
     localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
-  const handleProdiChange = (value: string) => {
-    setSelectedProdi(value);
+  const handleProdiChange = (value: string, displayName?: string) => {
+    setSelectedProdiId(value);
+    setSelectedProdi(displayName || value);
     // Reset lower levels when prodi changes
     setSelectedMataKuliah("");
+    setSelectedMataKuliahId("");
     setCurrentLevel(3);
 
     // Auto-apply the filters up to prodi level
     const newFilters = {
       university: selectedUniversity,
+      universityCode: getKampusCode(selectedUniversity),
       fakultas: selectedFakultas,
-      prodi: value,
-      mataKuliah: ""
+      fakultasId: selectedFakultasId,
+      fakultasName: selectedFakultas,
+      prodi: displayName || value,
+      prodiId: value,
+      prodiName: displayName || value,
+      mataKuliah: "",
+      mataKuliahId: "",
+      mataKuliahName: ""
     };
 
     setAppliedFilters(newFilters);
     localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
-  const handleMataKuliahChange = (value: string) => {
-    setSelectedMataKuliah(value);
+  const handleMataKuliahChange = (value: string, displayName?: string) => {
+    setSelectedMataKuliahId(value);
+    setSelectedMataKuliah(displayName || value);
     setCurrentLevel(4);
 
     // Auto-apply all filters including mata kuliah
     const newFilters = {
       university: selectedUniversity,
+      universityCode: getKampusCode(selectedUniversity),
       fakultas: selectedFakultas,
+      fakultasId: selectedFakultasId,
+      fakultasName: selectedFakultas,
       prodi: selectedProdi,
-      mataKuliah: value
+      prodiId: selectedProdiId,
+      prodiName: selectedProdi,
+      mataKuliah: displayName || value,
+      mataKuliahId: value,
+      mataKuliahName: displayName || value
     };
 
     setAppliedFilters(newFilters);
@@ -383,9 +397,16 @@ export default function StudentActivitesSummaryPage() {
   const handleApplyFilter = () => {
     const newFilters = {
       university: selectedUniversity,
+      universityCode: getKampusCode(selectedUniversity),
       fakultas: selectedFakultas,
+      fakultasId: selectedFakultasId,
+      fakultasName: selectedFakultas,
       prodi: selectedProdi,
-      mataKuliah: selectedMataKuliah
+      prodiId: selectedProdiId,
+      prodiName: selectedProdi,
+      mataKuliah: selectedMataKuliah,
+      mataKuliahId: selectedMataKuliahId,
+      mataKuliahName: selectedMataKuliah
     };
 
     setAppliedFilters(newFilters);
@@ -405,16 +426,26 @@ export default function StudentActivitesSummaryPage() {
   const clearAllFilters = () => {
     setSelectedUniversity("TEL-U BANDUNG");
     setSelectedFakultas("");
+    setSelectedFakultasId("");
     setSelectedProdi("");
+    setSelectedProdiId("");
     setSelectedMataKuliah("");
+    setSelectedMataKuliahId("");
     setCurrentLevel(1);
 
     // When clearing all filters, automatically apply the default kampus filter
     const clearedFilters = {
       university: "TEL-U BANDUNG",
+      universityCode: "bdg",
       fakultas: "",
+      fakultasId: "",
+      fakultasName: "",
       prodi: "",
-      mataKuliah: ""
+      prodiId: "",
+      prodiName: "",
+      mataKuliah: "",
+      mataKuliahId: "",
+      mataKuliahName: ""
     };
 
     setAppliedFilters(clearedFilters);
@@ -746,18 +777,13 @@ export default function StudentActivitesSummaryPage() {
                 <ChevronRight className="h-4 w-4 text-gray-400" />
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-red-600" strokeWidth={2} />
-                  <Select value={selectedFakultas} onValueChange={handleFakultasChange}>
-                    <SelectTrigger className="w-auto min-w-[140px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
-                      <SelectValue placeholder="Pilih Fakultas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fakultasData[selectedUniversity as keyof typeof fakultasData]?.map((fakultas: string) => (
-                        <SelectItem key={fakultas} value={fakultas}>
-                          {fakultas}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FilterDropdown
+                    type="fakultas"
+                    value={selectedFakultasId}
+                    onValueChange={handleFakultasChange}
+                    placeholder="Pilih Fakultas"
+                    kampus={getKampusCode(selectedUniversity)}
+                  />
                 </div>
 
                 {/* Remove Level Button - Fakultas */}
@@ -771,7 +797,7 @@ export default function StudentActivitesSummaryPage() {
                 </Button>
 
                 {/* Add Next Level Button - Fakultas */}
-                {selectedFakultas && currentLevel === 2 && (
+                {selectedFakultasId && currentLevel === 2 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -791,18 +817,14 @@ export default function StudentActivitesSummaryPage() {
                 <ChevronRight className="h-4 w-4 text-gray-400" />
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-red-600" strokeWidth={2} />
-                  <Select value={selectedProdi} onValueChange={handleProdiChange}>
-                    <SelectTrigger className="w-auto min-w-[140px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
-                      <SelectValue placeholder="Pilih Prodi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {prodiData[selectedFakultas as keyof typeof prodiData]?.map((prodi: string) => (
-                        <SelectItem key={prodi} value={prodi}>
-                          {prodi}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FilterDropdown
+                    type="prodi"
+                    value={selectedProdiId}
+                    onValueChange={handleProdiChange}
+                    placeholder="Pilih Prodi"
+                    fakultasId={selectedFakultasId}
+                    kampus={getKampusCode(selectedUniversity)}
+                  />
                 </div>
 
                 {/* Remove Level Button - Prodi */}
@@ -816,7 +838,7 @@ export default function StudentActivitesSummaryPage() {
                 </Button>
 
                 {/* Add Next Level Button - Prodi */}
-                {selectedProdi && currentLevel === 3 && (
+                {selectedProdiId && currentLevel === 3 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -836,18 +858,13 @@ export default function StudentActivitesSummaryPage() {
                 <ChevronRight className="h-4 w-4 text-gray-400" />
                 <div className="flex items-center gap-2">
                   <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
-                  <Select value={selectedMataKuliah} onValueChange={handleMataKuliahChange}>
-                    <SelectTrigger className="w-auto min-w-[160px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
-                      <SelectValue placeholder="Pilih Mata Kuliah" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mataKuliahData[selectedProdi as keyof typeof mataKuliahData]?.map((mataKuliah: string) => (
-                        <SelectItem key={mataKuliah} value={mataKuliah}>
-                          {mataKuliah}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FilterDropdown
+                    type="matkul"
+                    value={selectedMataKuliahId}
+                    onValueChange={handleMataKuliahChange}
+                    placeholder="Pilih Mata Kuliah"
+                    prodiId={selectedProdiId}
+                  />
                 </div>
 
                 {/* Remove Level Button - Mata Kuliah */}

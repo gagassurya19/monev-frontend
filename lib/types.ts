@@ -168,6 +168,61 @@ export interface StudentsFilters {
   activity_type: 'resource' | 'assign' | 'quiz';
 }
 
+// Filter API Response Types
+export interface FilterOption {
+  category_id: number;
+  category_name: string;
+}
+
+export interface FilterResponse {
+  status: boolean;
+  dataUser: {
+    sub: string;
+    name: string;
+    kampus: string;
+    fakultas: string;
+    prodi: string;
+    admin: boolean;
+    token: string;
+    isValid: boolean;
+    exp: number;
+    iat: number;
+  };
+  data: FilterOption[];
+  page: number;
+  limit: number;
+  total: number;
+  hasNextPage: boolean;
+}
+
+export interface MatkulFilterOption {
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+  curriculum_year: number;
+}
+
+export interface MatkulFilterResponse {
+  status: boolean;
+  dataUser: {
+    sub: string;
+    name: string;
+    kampus: string;
+    fakultas: string;
+    prodi: string;
+    admin: boolean;
+    token: string;
+    isValid: boolean;
+    exp: number;
+    iat: number;
+  };
+  data: MatkulFilterOption[];
+  page: number;
+  limit: number;
+  total: number;
+  hasNextPage: boolean;
+}
+
 // Error Types
 export interface ApiError {
   code: string;

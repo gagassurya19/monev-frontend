@@ -1,9 +1,72 @@
 import { apiClient } from '../api-client';
+import { API_ENDPOINTS } from '../config';
 import {
   ActivityStudentsResponse,
   StudentsFilters,
   ActivitySummary,
+  FilterResponse,
+  MatkulFilterResponse
 } from '../types';
+
+export interface KampusItem {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface KampusResponse {
+  data: KampusItem[];
+  success: boolean;
+  message: string;
+}
+
+export async function getFakultas(search = '', page = 1, limit = 20): Promise<FilterResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
+    const response = await apiClient.get<FilterResponse>(`${API_ENDPOINTS.SAS.FILTER.FAKULTAS}?${params.toString()}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching fakultas:', error);
+    throw error;
+  }
+}
+
+export async function getProdi(fakultas: string | number, kampus = 'bdg', search = '', page = 1, limit = 20): Promise<FilterResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('fakultas', fakultas.toString());
+    params.append('kampus', kampus);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
+    const response = await apiClient.get<FilterResponse>(`${API_ENDPOINTS.SAS.FILTER.PROGRAM_STUDI}?${params.toString()}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching prodi:', error);
+    throw error;
+  }
+}
+
+export async function getMatkul(prodi: string | number, search = '', page = 1, limit = 20): Promise<MatkulFilterResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('prodi', prodi.toString());
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
+    const response = await apiClient.get<MatkulFilterResponse>(`${API_ENDPOINTS.SAS.FILTER.MATA_KULIAH}?${params.toString()}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching matkul:', error);
+    throw error;
+  }
+}
 
 /**
  * Get students participating in a specific activity
@@ -116,4 +179,23 @@ export async function getActivityStudentsByProgram(
     ...additionalFilters,
     program_studi: programStudi,
   });
-} 
+}
+
+export async function getKampus(): Promise<KampusResponse> {
+  try {
+    // Return static kampus data as per the UI
+    const kampusData: KampusItem[] = [
+      { id: 'bdg', name: 'TELYU Bandung', code: 'bdg' },
+      { id: 'pwt', name: 'TELYU Purwokerto', code: 'pwt' },
+    ];
+    
+    return {
+      data: kampusData,
+      success: true,
+      message: 'Kampus data retrieved successfully',
+    };
+  } catch (error) {
+    console.error('Error fetching kampus:', error);
+    throw error;
+  }
+}

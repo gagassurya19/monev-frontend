@@ -20,11 +20,11 @@ export const isProduction = process.env.NODE_ENV === 'production';
 
 // API endpoints (for reference)
 export const API_ENDPOINTS = {
-  COURSES: '/api/v1/cp/courses',
-  COURSE_ACTIVITIES: (courseId: number) => `/api/v1/cp/${courseId}/activities`,
-  ACTIVITY_DETAIL: (courseId: number, activityId: number, activityType: string) => `/api/v1/cp/${courseId}/${activityType}/${activityId}`,
-  ETL: {
-    COURSE: {
+  CP: {
+    COURSES: '/api/v1/cp/courses',
+    COURSE_ACTIVITIES: (courseId: number) => `/api/v1/cp/${courseId}/activities`,
+    ACTIVITY_DETAIL: (courseId: number, activityId: number, activityType: string) => `/api/v1/cp/${courseId}/${activityType}/${activityId}`,
+    ETL: {
       STATUS: '/api/v1/cp/etl/status',
       LOGS: '/api/v1/cp/etl/history',
       RUN: '/api/v1/cp/etl/run',
@@ -32,7 +32,14 @@ export const API_ENDPOINTS = {
       CLEAR_STUCK: '/api/v1/cp/etl/clear_stuck',
       FORCE_CLEAR: '/api/v1/cp/etl/force_clear',
     },
-    ACTIVITY: {
+  },
+  SAS: {
+    FILTER: {
+      FAKULTAS: '/api/v1/sas/filter/fakultas',
+      PROGRAM_STUDI: '/api/v1/sas/filter/prodi',
+      MATA_KULIAH: '/api/v1/sas/filter/matkul',
+    },
+    ETL: {
       STATUS: '/api/v1/sas/etl/status',
       CHART_LOGS: '/api/v1/sas/etl/history',
       // 
@@ -46,4 +53,8 @@ export const API_ENDPOINTS = {
     USER_PROFILE: '/api/auth/user-profile',
     REFRESH_TOKEN: '/api/auth/refresh-token',
   },
+  HEALTH: {
+    DETAILED: '/health/detailed',
+    BASIC: '/health',
+  }
 } as const; 

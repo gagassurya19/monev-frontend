@@ -8,7 +8,7 @@ import { ETLStatus, ETLLog } from '@/lib/etl-types';
  */
 export async function getETLStatus(): Promise<ETLStatus> {
   try {
-    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.ETL.COURSE.STATUS);
+    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.CP.ETL.STATUS);
     return response;
   } catch (error) {
     console.error('Error fetching ETL status:', error);
@@ -25,7 +25,7 @@ export async function getETLStatus(): Promise<ETLStatus> {
 export async function getETLLogs(limit: number, page: number = 1): Promise<ETLLog[]> {
   try {
     const response = await apiClient.get<{ status: boolean; data: { logs: ETLLog[] } }>(
-      API_ENDPOINTS.ETL.COURSE.LOGS,
+      API_ENDPOINTS.CP.ETL.LOGS,
       { limit, page }
     );
     return response.data?.logs || [];
@@ -41,7 +41,7 @@ export async function getETLLogs(limit: number, page: number = 1): Promise<ETLLo
  */
 export async function startFullETL(): Promise<any> {
   try {
-    const response = await apiClient.post(API_ENDPOINTS.ETL.COURSE.RUN);
+    const response = await apiClient.post(API_ENDPOINTS.CP.ETL.RUN);
     return response;
   } catch (error) {
     console.error('Error starting full ETL:', error);
@@ -55,7 +55,7 @@ export async function startFullETL(): Promise<any> {
  */
 export async function startIncrementalETL(): Promise<any> {
   try {
-    const response = await apiClient.post(API_ENDPOINTS.ETL.COURSE.RUN_INCREMENTAL);
+    const response = await apiClient.post(API_ENDPOINTS.CP.ETL.RUN_INCREMENTAL);
     return response;
   } catch (error) {
     console.error('Error starting incremental ETL:', error);
@@ -69,7 +69,7 @@ export async function startIncrementalETL(): Promise<any> {
  */
 export async function clearStuckETL(): Promise<any> {
   try {
-    const response = await apiClient.post(API_ENDPOINTS.ETL.COURSE.CLEAR_STUCK);
+    const response = await apiClient.post(API_ENDPOINTS.CP.ETL.CLEAR_STUCK);
     return response;
   } catch (error) {
     console.error('Error clearing stuck ETL processes:', error);
@@ -83,7 +83,7 @@ export async function clearStuckETL(): Promise<any> {
  */
 export async function forceClearAllETL(): Promise<any> {
   try {
-    const response = await apiClient.post(API_ENDPOINTS.ETL.COURSE.FORCE_CLEAR);
+    const response = await apiClient.post(API_ENDPOINTS.CP.ETL.FORCE_CLEAR);
     return response;
   } catch (error) {
     console.error('Error force clearing all ETL processes:', error);

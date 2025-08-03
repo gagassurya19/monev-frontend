@@ -13,7 +13,7 @@ import {
  */
 export async function startETLChart(): Promise<ETLStartResponse> {
   try {
-    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_FETCH);
+    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.SAS.ETL.CHART_FETCH);
     return response;
   } catch (error) {
     console.error('Error starting ETL chart process:', error);
@@ -32,7 +32,7 @@ export async function getETLChartLogs(params: {
 } = {}): Promise<ETLLogsResponse> {
   try {
     const response = await apiClient.get<ETLLogsResponse>(
-      API_ENDPOINTS.ETL.ACTIVITY.CHART_LOGS,
+      API_ENDPOINTS.SAS.ETL.CHART_LOGS,
       params
     );
     return response;
@@ -48,7 +48,7 @@ export async function getETLChartLogs(params: {
  */
 export async function fetchETLChart(): Promise<ETLStartResponse> {
   try {
-    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_FETCH);
+    const response = await apiClient.get<ETLStartResponse>(API_ENDPOINTS.SAS.ETL.CHART_FETCH);
     return response;
   } catch (error) {
     console.error('Error fetching ETL chart process:', error);
@@ -70,7 +70,7 @@ export async function streamETLChartLogs(
   onError: (error: Error) => void,
   onOpen: () => void
 ): Promise<() => void> {
-  const url = `${API_ENDPOINTS.ETL.ACTIVITY.CHART_STREAM}?log_id=${logId}`;
+  const url = `${API_ENDPOINTS.SAS.ETL.CHART_STREAM}?log_id=${logId}`;
   
   const abortController = new AbortController();
   let isStreaming = false;
@@ -178,7 +178,7 @@ export async function streamETLChartLogs(
  */
 export async function clearStuckETLChart(): Promise<ETLClearStuckResponse> {
   try {
-    const response = await apiClient.post<ETLClearStuckResponse>(API_ENDPOINTS.ETL.ACTIVITY.CHART_CLEAR_STUCK);
+    const response = await apiClient.post<ETLClearStuckResponse>(API_ENDPOINTS.SAS.ETL.CHART_CLEAR_STUCK);
     return response;
   } catch (error) {
     console.error('Error clearing stuck ETL chart processes:', error);

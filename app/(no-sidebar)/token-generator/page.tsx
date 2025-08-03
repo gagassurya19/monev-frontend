@@ -23,6 +23,8 @@ import {
   Lock
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { MataKuliahMultiSelect } from '@/components/matkul-multiselect';
+import { MatkulFilterOption } from '@/lib/types';
 
 export default function TokenGeneratorPage() {
   const { user, isAuthenticated } = useAuth();
@@ -37,6 +39,7 @@ export default function TokenGeneratorPage() {
   const [generatedURL, setGeneratedURL] = useState('');
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [copySuccess, setCopySuccess] = useState<string>('');
+  const [selectedMatkul, setSelectedMatkul] = useState<MatkulFilterOption[]>([]);
 
   // Check if user is admin
 //   if (!isAuthenticated || !user?.admin) {
@@ -243,6 +246,15 @@ export default function TokenGeneratorPage() {
                           <SelectItem value="s1-komunikasi">S1 Komunikasi</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="matkul">Mata Kuliah</Label>
+                      <MataKuliahMultiSelect
+                        prodiId={prodi}
+                        value={selectedMatkul}
+                        onChange={setSelectedMatkul}
+                        disabled={!prodi}
+                      />
                     </div>
                   </>
                 )}

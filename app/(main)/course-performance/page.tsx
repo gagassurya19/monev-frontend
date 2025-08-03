@@ -355,7 +355,7 @@ export default function OptimizedDashboard() {
     try {
       setEtlLoading(true)
       // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.ETL.STATUS, {
+      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.CP.ETL.STATUS, {
         headers: {
           'Authorization': 'Bearer default-webhook-token-change-this'
         }

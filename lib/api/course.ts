@@ -27,7 +27,7 @@ export async function getCourses(filters: CoursesFilters = {}): Promise<CoursesR
       ...(filters.sort_order && { sort_order: filters.sort_order }),
     };
 
-    const response = await apiClient.get<CoursesResponse>(API_ENDPOINTS.COURSES, queryParams);
+    const response = await apiClient.get<CoursesResponse>(API_ENDPOINTS.CP.COURSES, queryParams);
     return response;
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -55,7 +55,7 @@ export async function getCourseActivities(
     };
 
     const response = await apiClient.get<CourseActivitiesResponse>(
-      API_ENDPOINTS.COURSE_ACTIVITIES(courseId),
+      API_ENDPOINTS.CP.COURSE_ACTIVITIES(courseId),
       queryParams
     );
     return response;
@@ -68,7 +68,7 @@ export async function getCourseActivities(
 // get activity detail
 export async function getActivityDetail(courseId: number, activityId: number, activityType: string, limit: number): Promise<ActivityDetailResponse> {
   try {
-    const response = await apiClient.get<ActivityDetailResponse>(API_ENDPOINTS.ACTIVITY_DETAIL(courseId, activityId, activityType), { limit });
+    const response = await apiClient.get<ActivityDetailResponse>(API_ENDPOINTS.CP.ACTIVITY_DETAIL(courseId, activityId, activityType), { limit });
     return response;
   } catch (error) {
     console.error(`Error fetching activity detail for course ${courseId} and activity ${activityId}:`, error);
