@@ -21,9 +21,9 @@ import {
 import { RefreshCw, Plus, X, Filter, GraduationCap, Building2, BookOpen, Book, ChevronDown, ChevronRight, BarChart3, TrendingUp, Sparkles, Users, School, Search, FileText, Video, MessageSquare, HelpCircle, Globe, Calculator, Clock } from "lucide-react";
 import { ActivityChart, generateSampleData } from "@/components/activity-chart";
 import ClientDate from "@/components/ClientDate";
-import { API_CONFIG, API_ENDPOINTS } from "@/lib/config";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { FilterDropdown } from "@/components/filter-dropdown";
+import { getETLSASStatus } from "@/lib/api/activity";
 
 interface AppliedFilters {
   university: string;
@@ -120,18 +120,7 @@ export default function StudentActivitesSummaryPage() {
   const fetchETLStatus = async () => {
     try {
       setEtlLoading(true)
-      // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.SAS.ETL.STATUS, {
-        headers: {
-          'Authorization': 'Bearer default-webhook-token-change-this'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await getETLSASStatus()
       setEtlStatus(data)
     } catch (error) {
       console.error('Error fetching ETL status:', error)

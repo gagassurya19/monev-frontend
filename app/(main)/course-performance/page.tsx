@@ -8,10 +8,10 @@ import {
   CoursesFilters,
   ActivitiesFilters,
   StudentsFilters,
-  ApiError
+  ApiError,
+  getETLStatus
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
-import { API_CONFIG, API_ENDPOINTS } from "@/lib/config"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import ClientDate from "@/components/ClientDate"
@@ -354,18 +354,7 @@ export default function OptimizedDashboard() {
   const fetchETLStatus = async () => {
     try {
       setEtlLoading(true)
-      // ETL endpoint uses special webhook token, not auth token
-      const response = await fetch(API_CONFIG.BASE_URL + API_ENDPOINTS.CP.ETL.STATUS, {
-        headers: {
-          'Authorization': 'Bearer default-webhook-token-change-this'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await getETLStatus()
       setEtlStatus(data)
     } catch (error) {
       console.error('Error fetching ETL status:', error)

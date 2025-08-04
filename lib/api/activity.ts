@@ -1,5 +1,6 @@
 import { apiClient } from '../api-client';
-import { API_ENDPOINTS } from '../config';
+import { API_CONFIG, API_ENDPOINTS } from '../config';
+import { ETLStatus } from '../etl-types';
 import {
   ActivityStudentsResponse,
   StudentsFilters,
@@ -196,6 +197,21 @@ export async function getKampus(): Promise<KampusResponse> {
     };
   } catch (error) {
     console.error('Error fetching kampus:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get ETL status for Student Activities Summary
+ * @returns Promise<ETLStatus>
+ */
+export async function getETLSASStatus(): Promise<ETLStatus> {
+  try {
+    // ETL endpoint uses special webhook token, not auth token
+    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.SAS.ETL.STATUS);
+    return response;
+  } catch (error) {
+    console.error('Error fetching ETL status:', error);
     throw error;
   }
 }

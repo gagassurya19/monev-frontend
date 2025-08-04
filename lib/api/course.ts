@@ -8,6 +8,7 @@ import {
   ActivityDetailResponse,
 } from '../types';
 import { API_ENDPOINTS, API_CONFIG } from '../config';
+import { ETLStatus } from '../etl-types';
 
 /**
  * Get all courses with filtering and pagination
@@ -72,6 +73,21 @@ export async function getActivityDetail(courseId: number, activityId: number, ac
     return response;
   } catch (error) {
     console.error(`Error fetching activity detail for course ${courseId} and activity ${activityId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get ETL status for course performance
+ * @returns Promise<ETLStatus>
+ */
+export async function getETLCPStatus(): Promise<ETLStatus> {
+  try {
+    // ETL endpoint uses special webhook token, not auth token
+    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.CP.ETL.STATUS);
+    return response;
+  } catch (error) {
+    console.error('Error fetching ETL status:', error);
     throw error;
   }
 }
