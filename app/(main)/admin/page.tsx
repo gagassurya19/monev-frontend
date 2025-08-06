@@ -130,17 +130,17 @@ export default function AdminPage() {
 
     const quickActions = [
         {
-            title: "ETL Moodle to Celoeapi",
-            description: "Manage data synchronization and ETL processes from Moodle to Celoeapi",
-            href: "/admin/etl-celoeapi",
+            title: "Transform Data Course Performance",
+            description: "Course Perfomance data transformation from Moodle to Celoeapi | Celoeapi to Monev",
+            href: "/admin/etl-cp",
             icon: Database,
             color: "text-green-600",
             bgColor: "bg-green-50"
         },
         {
-            title: "ETL Celoeapi to Monev",
-            description: "Manage data synchronization and ETL processes from Celoeapi to Monev",
-            href: "/admin/etl-monev",
+            title: "Transform Data Student Activities Summary",
+            description: "Student Activities Summary data transformation from Moodle to Celoeapi | Celoeapi to Monev",
+            href: "/admin/etl-sas",
             icon: Database,
             color: "text-red-600",
             bgColor: "bg-red-50"

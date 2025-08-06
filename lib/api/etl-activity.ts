@@ -32,7 +32,7 @@ export async function getETLChartLogs(params: {
 } = {}): Promise<ETLLogsResponse> {
   try {
     const response = await apiClient.get<ETLLogsResponse>(
-      API_ENDPOINTS.SAS.ETL.CHART_LOGS,
+      API_ENDPOINTS.SAS.ETL.LOGS_SUBJECT_CATEGORIES_FETCH,
       params
     );
     return response;
@@ -70,7 +70,7 @@ export async function streamETLChartLogs(
   onError: (error: Error) => void,
   onOpen: () => void
 ): Promise<() => void> {
-  const url = `${API_ENDPOINTS.SAS.ETL.CHART_STREAM}?log_id=${logId}`;
+  const url = `${API_ENDPOINTS.SAS.ETL.LOGS_REALTIME.replace('{log}', logId)}`;
   
   const abortController = new AbortController();
   let isStreaming = false;
@@ -182,6 +182,204 @@ export async function clearStuckETLChart(): Promise<ETLClearStuckResponse> {
     return response;
   } catch (error) {
     console.error('Error clearing stuck ETL chart processes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Start fetch category subject ETL process
+ * @returns Promise<ETLStartResponse>
+ */
+export async function startFetchCategorySubject(): Promise<ETLStartResponse> {
+  try {
+    const response = await apiClient.post<ETLStartResponse>(API_ENDPOINTS.SAS.FETCH.SUBJECT_CATEGORIES);
+    return response;
+  } catch (error) {
+    console.error('Error starting fetch category subject process:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get fetch category subject logs with pagination
+ * @param params - Query parameters for pagination
+ * @returns Promise<ETLLogsResponse>
+ */
+export async function getFetchCategorySubjectLogs(params: {
+  limit?: number;
+  offset?: number;
+} = {}): Promise<ETLLogsResponse> {
+  try {
+    const response = await apiClient.get<ETLLogsResponse>(
+      API_ENDPOINTS.SAS.FETCH.LOGS_SUBJECT_CATEGORIES_FETCH,
+      params
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching category subject logs:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get detailed logs for a specific log ID
+ * @param logId - The log ID to get details for
+ * @param params - Query parameters for pagination
+ * @returns Promise<any> - Detailed log response
+ */
+export async function getFetchCategorySubjectLogDetail(
+  logId: string,
+  params: {
+    limit?: number;
+    offset?: number;
+  } = {}
+): Promise<any> {
+  try {
+    const url = API_ENDPOINTS.SAS.FETCH.LOGS_DETAIL_SUBJECT_CATEGORIES.replace('{logId}', logId);
+    const response = await apiClient.get(url, params);
+    return response;
+  } catch (error) {
+    console.error('Error fetching category subject log detail:', error);
+    throw error;
+  }
+}
+
+/**
+ * Stream fetch category subject logs in real-time
+ * @param logId - The log ID to stream
+ * @param onMessage - Callback function to handle incoming messages
+ * @param onError - Callback function to handle errors
+ * @param onOpen - Callback function to handle connection open
+ * @returns Function to close the stream
+ */
+export async function streamFetchCategorySubjectLogs(
+  logId: string,
+  onMessage: (data: string) => void,
+  onError: (error: Error) => void,
+  onOpen: () => void
+): Promise<() => void> {
+  const url = `${API_ENDPOINTS.SAS.FETCH.LOGS_REALTIME_SUBJECT_CATEGORIES.replace('{logId}', logId)}`;
+  
+  const abortController = new AbortController();
+  let isStreaming = false;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache'
+      },
+      signal: abortController.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    onOpen();
+    isStreaming = true;
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      throw new Error('No response body reader available');
+    }
+
+    let buffer = '';
+
+    const readStream = async () => {
+      try {
+        while (isStreaming && !abortController.signal.aborted) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+          
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+
+          for (const event of events) {
+            if (!event.trim()) continue;
+            
+            const lines = event.split('\n');
+            let data = '';
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                data = line.substring(6).trim();
+                break;
+              }
+            }
+            
+            if (data && data !== '[DONE]') {
+              try {
+                const parsed = JSON.parse(data);
+                onMessage(data);
+                
+                if (parsed.type === 'disconnected') {
+                  isStreaming = false;
+                  break;
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse SSE data:', data, parseError);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted && isStreaming) {
+          onError(error as Error);
+        }
+      } finally {
+        isStreaming = false;
+        try {
+          reader.releaseLock();
+        } catch (e) {
+          // Ignore release errors
+        }
+      }
+    };
+
+    readStream();
+
+    return () => {
+      isStreaming = false;
+      abortController.abort();
+    };
+
+  } catch (error) {
+    isStreaming = false;
+    onError(error as Error);
+    return () => {};
+  }
+}
+
+/**
+ * Get category and subject data for testing
+ * @param params - Query parameters for filtering and pagination
+ * @returns Promise<any> - Category and subject data response
+ */
+export async function getCategorySubjectData(params: {
+  search?: string;
+  category_id?: string;
+  subject_id?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<any> {
+  try {
+    const response = await apiClient.get<any>(
+      API_ENDPOINTS.SAS.DATA.CATEGORY_SUBJECT,
+      params
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching category subject data:', error);
     throw error;
   }
 }

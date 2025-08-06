@@ -25,12 +25,12 @@ export const API_ENDPOINTS = {
     COURSE_ACTIVITIES: (courseId: number) => `/api/v1/cp/${courseId}/activities`,
     ACTIVITY_DETAIL: (courseId: number, activityId: number, activityType: string) => `/api/v1/cp/${courseId}/${activityType}/${activityId}`,
     ETL: {
-      STATUS: '/api/v1/cp/etl/status',
-      LOGS: '/api/v1/cp/etl/history',
-      RUN: '/api/v1/cp/etl/run',
-      RUN_INCREMENTAL: '/api/v1/cp/etl/run_incremental',
-      CLEAR_STUCK: '/api/v1/cp/etl/clear_stuck',
-      FORCE_CLEAR: '/api/v1/cp/etl/force_clear',
+      STATUS: '/celoeapi/cp/etl/status',
+      LOGS: '/celoeapi/cp/etl/logs',
+      RUN: '/celoeapi/cp/etl/run',
+      RUN_INCREMENTAL: '/celoeapi/cp/etl/run-incremental',
+      CLEAR_STUCK: '/celoeapi/cp/etl/clear-stuck',
+      FORCE_CLEAR: '/celoeapi/cp/etl/force-clear',
     },
   },
   SAS: {
@@ -39,14 +39,22 @@ export const API_ENDPOINTS = {
       PROGRAM_STUDI: '/api/v1/sas/filter/prodi',
       MATA_KULIAH: '/api/v1/sas/filter/matkul',
     },
+    DATA: {
+      CATEGORY_SUBJECT: '/api/v1/sas/data/category-subject',
+    },
     ETL: {
       STATUS: '/api/v1/sas/etl/status',
-      CHART_LOGS: '/api/v1/sas/etl/history',
-      // 
+      LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas/etl/history',
+      LOGS_REALTIME: '/api/v1/sas-etl/logs/{log}/realtime',
       CHART_FETCH: '/api/v1/sas/etl/fetch',
-      CHART_STREAM: '/api/v1/sas/etl/stream',
       CHART_CLEAR_STUCK: '/api/v1/sas/etl/clear-stuck',
     },
+    FETCH: {
+      SUBJECT_CATEGORIES: '/api/v1/sas-etl/category-subject/run',
+      LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas-etl/category-subject/logs',
+      LOGS_DETAIL_SUBJECT_CATEGORIES: '/api/v1/sas-etl/logs/{logId}',
+      LOGS_REALTIME_SUBJECT_CATEGORIES: '/api/v1/sas-etl/logs/{logId}/realtime',
+    }
   },
   AUTH: {
     LOGIN_ADMIN: '/api/v1/auth/login-admin',

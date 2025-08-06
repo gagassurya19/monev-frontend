@@ -4,18 +4,18 @@ import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-    Database, 
-    CheckCircle, 
+import {
+    Database,
+    CheckCircle,
     Lock,
     Activity,
     BookOpen,
     Globe,
 } from 'lucide-react';
-import CeLOEETLTab from '@/components/admin/etl/etl-celoe-tab';
-import ExternalAPIsETLTab from '@/components/admin/etl/etl-chart-tab';
+import CeloeBackendSAS from '@/components/admin/sas-celoe-backend-tab';
+import MonevBackendSAS from '@/components/admin/sas-monev-backend-tab';
 
-export default function AdminETLPage() {
+export default function AdminETLSASPage() {
     const { user, isAuthenticated } = useAuth();
 
     // Check if user is admin
@@ -51,7 +51,7 @@ export default function AdminETLPage() {
                         <Database className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">ETL Management Center</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">ETL & Fetch | Student Activities Summary</h1>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -71,22 +71,22 @@ export default function AdminETLPage() {
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="celoe" className="flex items-center gap-2">
                         <BookOpen className="w-4 h-4" />
-                        CeLOE ETL
+                        CeLOE Backend
                     </TabsTrigger>
                     <TabsTrigger value="external" className="flex items-center gap-2">
                         <Globe className="w-4 h-4" />
-                        Chart ETL
+                        Monev Backend
                     </TabsTrigger>
                 </TabsList>
 
                 {/* CeLOE ETL Tab */}
                 <TabsContent value="celoe" className="space-y-6 mt-6">
-                    <CeLOEETLTab />
+                    <CeloeBackendSAS />
                 </TabsContent>
 
                 {/* Chart ETL Tab */}
                 <TabsContent value="external" className="space-y-6 mt-6">
-                    <ExternalAPIsETLTab />
+                    <MonevBackendSAS />
                 </TabsContent>
 
             </Tabs>

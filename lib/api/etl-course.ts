@@ -22,11 +22,11 @@ export async function getETLStatus(): Promise<ETLStatus> {
  * @param page - Page number for pagination
  * @returns Promise<ETLLog[]> - Array of ETL logs
  */
-export async function getETLLogs(limit: number, page: number = 1): Promise<ETLLog[]> {
+export async function getETLLogs(limit: number, offset: number = 1): Promise<ETLLog[]> {
   try {
     const response = await apiClient.get<{ status: boolean; data: { logs: ETLLog[] } }>(
       API_ENDPOINTS.CP.ETL.LOGS,
-      { limit, page }
+      { limit, offset }
     );
     return response.data?.logs || [];
   } catch (error) {

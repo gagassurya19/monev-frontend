@@ -38,7 +38,7 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
     const [isLoadingStatus, setIsLoadingStatus] = useState(false);
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [logLimit, setLogLimit] = useState(10);
-    const [logPage, setLogPage] = useState(1);
+    const [logOffset, setlogOffset] = useState(1);
     const [hasConnectionError, setHasConnectionError] = useState(false);
 
     const [isRunningFullETL, setIsRunningFullETL] = useState(false);
@@ -75,7 +75,7 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
     const handleFetchETLLogs = async () => {
         setIsLoadingLogs(true);
         try {
-            const logs = await getETLLogs(logLimit, logPage);
+            const logs = await getETLLogs(logLimit, logOffset);
             setEtlLogs(logs);
         } catch (error: any) {
             if (error.status !== 401) {
