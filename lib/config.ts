@@ -25,18 +25,18 @@ export const API_ENDPOINTS = {
     COURSE_ACTIVITIES: (courseId: number) => `/api/v1/cp/${courseId}/activities`,
     ACTIVITY_DETAIL: (courseId: number, activityId: number, activityType: string) => `/api/v1/cp/${courseId}/${activityType}/${activityId}`,
     ETL: {
-      STATUS: '/celoeapi/cp/etl/status',
-      LOGS: '/celoeapi/cp/etl/logs',
-      RUN: '/celoeapi/cp/etl/run',
-      RUN_INCREMENTAL: '/celoeapi/cp/etl/run-incremental',
-      CLEAR_STUCK: '/celoeapi/cp/etl/clear-stuck',
-      FORCE_CLEAR: '/celoeapi/cp/etl/force-clear',
+      STATUS: '/api/v1/celoeapi/cp/etl/status',
+      LOGS: '/api/v1/celoeapi/cp/etl/logs',
+      RUN: '/api/v1/celoeapi/cp/etl/run',
+      RUN_INCREMENTAL: '/api/v1/celoeapi/cp/etl/run-incremental',
+      CLEAR_STUCK: '/api/v1/celoeapi/cp/etl/clear-stuck',
+      FORCE_CLEAR: '/api/v1/celoeapi/cp/etl/force-clear',
     },
     ETL_MONEV: {
-      RUN: '/etl-cp/run',
-      HISTORY: '/etl-cp/history',
-      STATUS: '/etl-cp/status',
-      TRIGGER: '/etl-cp/test-api',
+      RUN: '/api/v1/etl-cp/run',
+      HISTORY: '/api/v1/etl-cp/history',
+      STATUS: '/api/v1/etl-cp/status',
+      TRIGGER: '/api/v1/etl-cp/test-api',
     }
   },
   SAS: {
