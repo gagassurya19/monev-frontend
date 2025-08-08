@@ -32,6 +32,12 @@ export const API_ENDPOINTS = {
       CLEAR_STUCK: '/celoeapi/cp/etl/clear-stuck',
       FORCE_CLEAR: '/celoeapi/cp/etl/force-clear',
     },
+    ETL_MONEV: {
+      RUN: '/etl-cp/run',
+      HISTORY: '/etl-cp/history',
+      STATUS: '/etl-cp/status',
+      TRIGGER: '/etl-cp/test-api',
+    }
   },
   SAS: {
     FILTER: {
