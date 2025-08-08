@@ -69,7 +69,7 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: '/api/auth/refresh-token',
   },
   HEALTH: {
-    DETAILED: '/health/detailed',
-    BASIC: '/health',
+    DETAILED: '/api/v1/health/detailed',
+    BASIC: '/api/v1/health',
   }
 } as const; 
