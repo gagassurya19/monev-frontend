@@ -8,7 +8,7 @@ import { ETLStatus, ETLLog } from '@/lib/etl-types';
  */
 export async function getETLStatus(): Promise<ETLStatus> {
   try {
-    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.CP.ETL.STATUS);
+    const response = await apiClient.get<ETLStatus>(API_ENDPOINTS.CP.ETL_MONEV.STATUS);
     return response;
   } catch (error) {
     console.error('Error fetching ETL status:', error);

@@ -28,15 +28,19 @@ export const API_ENDPOINTS = {
       STATUS: '/api/v1/celoeapi/cp/etl/status',
       LOGS: '/api/v1/celoeapi/cp/etl/logs',
       RUN: '/api/v1/celoeapi/cp/etl/run',
-      RUN_INCREMENTAL: '/api/v1/celoeapi/cp/etl/run-incremental',
-      CLEAR_STUCK: '/api/v1/celoeapi/cp/etl/clear-stuck',
-      FORCE_CLEAR: '/api/v1/celoeapi/cp/etl/force-clear',
+      CLEAN: '/api/v1/celoeapi/cp/etl/clean',
     },
     ETL_MONEV: {
       RUN: '/api/v1/etl-cp/run',
       HISTORY: '/api/v1/etl-cp/history',
       STATUS: '/api/v1/etl-cp/status',
       TRIGGER: '/api/v1/etl-cp/test-api',
+    },
+    ETL_CP: {
+      RUN: '/api/v1/etl-cp/run',
+      HISTORY: '/api/v1/etl-cp/history',
+      STATUS: '/api/v1/etl-cp/status',
+      TEST_API: '/api/v1/etl-cp/test-api',
     }
   },
   SAS: {

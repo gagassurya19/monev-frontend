@@ -62,54 +62,70 @@ interface ActivitySummary {
     activity_id: number
     activity_type: string
     activity_name: string
-    accessed_count: number
+    accessed_count: number | null
     submission_count: number | null
     graded_count: number | null
     attempted_count: number | null
     created_at: string
+    updated_at?: string
 }
 
 interface ETLStatus {
-    status: boolean
-    data: {
+    status: {
         status: string
         lastRun: {
-            id: string
+            id: number
             start_date: string
             end_date: string
             status: string
-            total_records: string
-            offset: string
+            total_records: number
+            offset: number
         }
         nextRun: string
         isRunning: boolean
+        shouldRun: boolean
     }
 }
 
 interface CourseInfo {
+    id?: number
     course_id: number
     course_name: string
     kelas: string
+    jumlah_aktivitas: number
+    jumlah_mahasiswa: number
+    dosen_pengampu: string
+    created_at?: string
+    updated_at?: string
 }
 
-interface StudentDisplayData {
+// Flexible student data interface that can handle all activity types
+interface StudentData {
+    id: number
     user_id: number
-    nim: string
+    nim: string | null
     full_name: string
-    activity_type: string
-    waktu_aktivitas: string
-    durasi_pengerjaan?: string
-    nilai?: number
+    program_studi: string | null
+    // Common fields
+    waktu_aktivitas?: string
+    // Resource-specific fields
+    waktu_akses?: string
+    // Assign-specific fields
+    waktu_submit?: string
+    durasi_pengerjaan?: string | null
+    nilai?: number | null
+    // Quiz-specific fields
     progress?: string
-    email?: string
-    program_studi?: string
-}
-
-interface ExtendedStudentData extends StudentDisplayData {
     waktu_selesai?: string
     jumlah_dikerjakan?: number
     jumlah_soal?: number
     status_pengerjaan?: string
+    // Additional display fields
+    email?: string
+}
+
+interface ExtendedStudentData extends StudentData {
+    activity_type: string
 }
 
 export default function ActivityDetailPage() {
@@ -173,28 +189,105 @@ export default function ActivityDetailPage() {
             }
 
             // Set activity data from the new structure
-            setActivity(activityResponse.info.activity)
+            const activityData = activityResponse.info.activity
+            setActivity({
+                ...activityData,
+                updated_at: (activityData as any).updated_at || activityData.created_at || ''
+            })
             
             // Set course info from the new structure
             if (activityResponse.info.course) {
-                setCourseInfo(activityResponse.info.course)
+                const courseData = activityResponse.info.course
+                setCourseInfo({
+                    id: (courseData as any).id || 0,
+                    course_id: courseData.course_id,
+                    course_name: courseData.course_name,
+                    kelas: courseData.kelas,
+                    jumlah_aktivitas: courseData.jumlah_aktivitas || 0,
+                    jumlah_mahasiswa: courseData.jumlah_mahasiswa || 0,
+                    dosen_pengampu: courseData.dosen_pengampu || '',
+                    created_at: (courseData as any).created_at || '',
+                    updated_at: (courseData as any).updated_at || (courseData as any).created_at || ''
+                })
             }
 
             // Use student data directly from activitiesResponse
             if (activityResponse.students && activityResponse.students.data) {
+                // Handle single student object or array
                 const studentData = Array.isArray(activityResponse.students.data) 
                     ? activityResponse.students.data 
                     : [activityResponse.students.data];
                 
-                // Add activity_type to each student record
-                const extendedStudentData: ExtendedStudentData[] = studentData.map(student => ({
-                    ...student,
-                    activity_type: activityType,
-                    waktu_selesai: student.waktu_selesai || '',
-                    jumlah_dikerjakan: student.jumlah_dikerjakan || 0,
-                    jumlah_soal: student.jumlah_soal || 0,
-                    status_pengerjaan: student.status_pengerjaan || ''
-                }));
+                // Add activity_type to each student record and map to ExtendedStudentData
+                const extendedStudentData: ExtendedStudentData[] = studentData.map(student => {
+                    const baseStudent: StudentData = {
+                        id: student.id,
+                        user_id: student.user_id,
+                        nim: student.nim,
+                        full_name: student.full_name,
+                        program_studi: student.program_studi
+                    };
+
+                    let extended: ExtendedStudentData;
+                    if (activityType === 'resource') {
+                        extended = {
+                            ...baseStudent,
+                            activity_type: activityType,
+                            waktu_akses: student.waktu_akses || '',
+                            waktu_aktivitas: student.waktu_aktivitas || '',
+                            durasi_pengerjaan: '',
+                            nilai: undefined,
+                            progress: '',
+                            email: '',
+                            waktu_selesai: '',
+                            jumlah_dikerjakan: 0,
+                            jumlah_soal: 0,
+                            status_pengerjaan: ''
+                        };
+                    } else if (activityType === 'assign') {
+                        extended = {
+                            ...baseStudent,
+                            activity_type: activityType,
+                            waktu_submit: student.waktu_submit || '',
+                            durasi_pengerjaan: student.durasi_pengerjaan || null,
+                            nilai: student.nilai || null,
+                            waktu_aktivitas: student.waktu_aktivitas || '',
+                            email: '',
+                            waktu_selesai: '',
+                            jumlah_dikerjakan: 0,
+                            jumlah_soal: 0,
+                            status_pengerjaan: ''
+                        };
+                    } else if (activityType === 'quiz') {
+                        extended = {
+                            ...baseStudent,
+                            activity_type: activityType,
+                            waktu_aktivitas: student.waktu_aktivitas || '',
+                            durasi_pengerjaan: student.durasi_pengerjaan || undefined,
+                            nilai: student.nilai || undefined,
+                            progress: student.progress || undefined,
+                            waktu_selesai: student.waktu_selesai || undefined,
+                            jumlah_dikerjakan: student.jumlah_dikerjakan || undefined,
+                            jumlah_soal: student.jumlah_soal || undefined,
+                            status_pengerjaan: student.status_pengerjaan || undefined
+                        };
+                    } else {
+                        extended = {
+                            ...baseStudent,
+                            activity_type: activityType,
+                            waktu_aktivitas: '',
+                            durasi_pengerjaan: '',
+                            nilai: undefined,
+                            progress: '',
+                            email: '',
+                            waktu_selesai: '',
+                            jumlah_dikerjakan: 0,
+                            jumlah_soal: 0,
+                            status_pengerjaan: ''
+                        };
+                    }
+                    return extended;
+                });
                 
                 setStudents(extendedStudentData)
                 
@@ -253,8 +346,8 @@ export default function ActivityDetailPage() {
 
         switch (activity?.activity_type?.toLowerCase()) {
             case 'resource':
-                completedStudents = accessedCount
-                completionRate = totalStudents > 0 ? (accessedCount / totalStudents) * 100 : 0
+                completedStudents = accessedCount || 0
+                completionRate = totalStudents > 0 ? ((accessedCount || 0) / totalStudents) * 100 : 0
                 break
             case 'assign':
                 completedStudents = gradedCount || 0
@@ -657,6 +750,14 @@ export default function ActivityDetailPage() {
                                             <span className="text-gray-500 flex-shrink-0">
                                                 Section {activity.section}
                                             </span>
+                                            {courseInfo.dosen_pengampu && (
+                                                <>
+                                                    <span className="text-gray-500 flex-shrink-0">•</span>
+                                                    <span className="text-gray-500 flex-shrink-0">
+                                                        Dosen: {courseInfo.dosen_pengampu}
+                                                    </span>
+                                                </>
+                                            )}
                                         </>
                                     ) : (
                                         <>
@@ -703,6 +804,11 @@ export default function ActivityDetailPage() {
                                                 <span>•</span>
                                                 <span>Section {activity.section}</span>
                                             </div>
+                                            {courseInfo.dosen_pengampu && (
+                                                <div className="text-gray-500 text-xs mt-1">
+                                                    Dosen: {courseInfo.dosen_pengampu}
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="text-center">
@@ -745,12 +851,18 @@ export default function ActivityDetailPage() {
                         <div className="flex items-center gap-2 text-gray-600">
                             <Clock className="w-4 h-4 flex-shrink-0" />
                             <span className="truncate">
-                                Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} />
+                                Terakhir update: <ClientDate dateString={etlStatus.status.lastRun.end_date} />
                             </span>
-                            {etlStatus.data.isRunning && (
+                            {etlStatus.status.isRunning && (
                                 <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                                     <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
                                     <span className="text-blue-600 text-xs">Updating...</span>
+                                </div>
+                            )}
+                            {etlStatus.status.status === 'paused' && (
+                                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                                    <Clock className="w-3 h-3 text-yellow-600" />
+                                    <span className="text-yellow-600 text-xs">Paused</span>
                                 </div>
                             )}
                         </div>
@@ -864,7 +976,9 @@ export default function ActivityDetailPage() {
                                             <TableCell className="p-2 sm:p-4">
                                                 <div className="space-y-1">
                                                     <div className="font-medium text-xs sm:text-sm">{student.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{student.nim}</div>
+                                                    {student.nim && (
+                                                        <div className="text-xs text-gray-500">{student.nim}</div>
+                                                    )}
                                                     {student.program_studi && (
                                                         <div className="text-xs text-blue-600">{student.program_studi}</div>
                                                     )}
@@ -875,7 +989,7 @@ export default function ActivityDetailPage() {
                                                     <div className="flex items-center gap-1">
                                                         <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
                                                         <span>
-                                                            <ClientDate dateString={student.waktu_aktivitas} />
+                                                            <ClientDate dateString={student.waktu_aktivitas || student.waktu_akses || student.waktu_submit || ''} />
                                                         </span>
                                                     </div>
                                                     {student.durasi_pengerjaan && (
@@ -884,10 +998,10 @@ export default function ActivityDetailPage() {
                                                             <span>Duration: {student.durasi_pengerjaan}</span>
                                                         </div>
                                                     )}
-                                                    {(student as any).waktu_selesai && (
+                                                    {student.waktu_selesai && (
                                                         <div className="flex items-center gap-1 text-green-600">
                                                             <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                                                            <span>Finished: <ClientDate dateString={(student as any).waktu_selesai} /></span>
+                                                            <span>Finished: <ClientDate dateString={student.waktu_selesai} /></span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -896,11 +1010,11 @@ export default function ActivityDetailPage() {
                                                 <div className="space-y-1 text-xs">
                                                     {activity.activity_type.toLowerCase() === 'quiz' && (
                                                         <>
-                                                            {(student as any).jumlah_dikerjakan && (student as any).jumlah_soal && (
+                                                            {student.jumlah_dikerjakan && student.jumlah_soal && (
                                                                 <div className="flex items-center gap-1">
                                                                     <Target className="w-3 h-3 text-blue-500 flex-shrink-0" />
                                                                     <span>
-                                                                        {(student as any).jumlah_dikerjakan}/{(student as any).jumlah_soal} soal
+                                                                        {student.jumlah_dikerjakan}/{student.jumlah_soal} soal
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -924,7 +1038,7 @@ export default function ActivityDetailPage() {
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="outline" className="text-xs">
-                                                            <span className="hidden sm:inline">Pending</span>
+                                                            <span className="hidden sm:inline">No Score</span>
                                                             <span className="sm:hidden">-</span>
                                                         </Badge>
                                                     )}

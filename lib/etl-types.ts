@@ -1,18 +1,18 @@
 // ETL Status and Log interfaces
 export interface ETLStatus {
-    status: boolean;
-    data: {
+    status: {
         status: string;
         lastRun: {
-            id: string;
+            id: number;
             start_date: string;
             end_date: string;
             status: string;
-            total_records: string;
-            offset: string;
+            total_records: number;
+            offset: number;
         };
         nextRun: string;
         isRunning: boolean;
+        shouldRun: boolean;
     };
 }
 

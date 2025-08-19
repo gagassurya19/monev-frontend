@@ -11,6 +11,7 @@ import {
   ApiError,
   getETLStatus
 } from "@/lib/api"
+import { ETLStatus } from "@/lib/etl-types"
 import { useAuth } from "@/lib/auth-context"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +47,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   ChevronRight as ChevronRightIcon,
   Filter,
   SortAsc,
@@ -79,22 +81,7 @@ interface Course {
   dosen_pengampu: string
 }
 
-interface ETLStatus {
-  status: boolean
-  data: {
-    status: string
-    lastRun: {
-      id: string
-      start_date: string
-      end_date: string
-      status: string
-      total_records: string
-      offset: string
-    }
-    nextRun: string
-    isRunning: boolean
-  }
-}
+
 
 interface ActivitySummary {
   id: number
@@ -242,20 +229,38 @@ const usePagination = (totalItems: number, itemsPerPage = 10) => {
 
 // Skeleton components
 const SkeletonTableRow = () => (
-  <TableRow>
-    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-    <TableCell>
+  <TableRow className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200">
+    <TableCell className="p-3 sm:p-4">
+      <Skeleton className="h-6 w-6 rounded-full bg-gray-300" />
+    </TableCell>
+    <TableCell className="p-3 sm:p-4">
       <div className="space-y-2">
-        <Skeleton className="h-4 w-[200px]" />
-        <Skeleton className="h-3 w-[150px]" />
+        <Skeleton className="h-5 w-[200px] bg-gray-300" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-16 bg-gray-300" />
+          <Skeleton className="h-5 w-20 bg-gray-300" />
+        </div>
       </div>
     </TableCell>
-    <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
-    <TableCell><Skeleton className="h-6 w-[60px]" /></TableCell>
-    <TableCell>
-      <div className="text-right space-y-1">
-        <Skeleton className="h-4 w-[100px] ml-auto" />
-        <Skeleton className="h-3 w-[90px] ml-auto" />
+    <TableCell className="p-3 sm:p-4">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[120px] bg-gray-300" />
+        <Skeleton className="h-6 w-[100px] bg-gray-300" />
+        </div>
+    </TableCell>
+    <TableCell className="p-3 sm:p-4">
+      <Skeleton className="h-6 w-[60px] bg-gray-300" />
+    </TableCell>
+    <TableCell className="p-3 sm:p-4">
+      <div className="text-right space-y-2">
+        <div className="flex items-center justify-end gap-2">
+          <Skeleton className="h-6 w-6 rounded-full bg-gray-300" />
+          <Skeleton className="h-4 w-[80px] bg-gray-300" />
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          <Skeleton className="h-6 w-6 rounded-full bg-gray-300" />
+          <Skeleton className="h-4 w-[100px] bg-gray-300" />
+        </div>
       </div>
     </TableCell>
   </TableRow>
@@ -274,11 +279,11 @@ const EmptyState = ({
   action?: React.ReactNode
 }) => (
   <div className="flex flex-col items-center justify-center py-12 text-center">
-    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-      <Icon className="w-8 h-8 text-gray-400" />
+    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-gray-300">
+      <Icon className="w-10 h-10 text-gray-400" />
     </div>
-    <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-    <p className="text-gray-500 mb-4 max-w-sm">{description}</p>
+    <h3 className="text-xl font-semibold text-gray-800 mb-3">{title}</h3>
+    <p className="text-gray-600 mb-6 max-w-sm text-center leading-relaxed">{description}</p>
     {action}
   </div>
 )
@@ -289,7 +294,11 @@ const EmptyCoursesState = () => (
     title="Tidak Ada Mata Kuliah"
     description="Belum ada mata kuliah yang tersedia atau sesuai dengan filter pencarian Anda."
     action={
-      <Button variant="outline" onClick={() => window.location.reload()}>
+      <Button 
+        variant="outline" 
+        onClick={() => window.location.reload()}
+        className="bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800"
+      >
         <RefreshCw className="w-4 h-4 mr-2" />
         Muat Ulang
       </Button>
@@ -298,11 +307,12 @@ const EmptyCoursesState = () => (
 )
 
 const EmptyActivitiesState = () => (
-  <div className="py-8 text-center">
-    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-      <FileText className="w-6 h-6 text-gray-400" />
+  <div className="py-6 text-center">
+    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-300">
+      <FileText className="w-8 h-8 text-gray-400" />
     </div>
-    <p className="text-sm text-gray-500">Tidak ada aktivitas dalam mata kuliah ini</p>
+    <h4 className="text-sm font-medium text-gray-700 mb-2">Tidak Ada Aktivitas</h4>
+    <p className="text-xs text-gray-600">Belum ada aktivitas yang tersedia dalam mata kuliah ini</p>
   </div>
 )
 
@@ -566,13 +576,13 @@ export default function OptimizedDashboard() {
   const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
       {/* Items per page selector */}
-      <div className="flex items-center space-x-2">
-        <span className="text-sm text-gray-700">Tampilkan:</span>
+      <div className="flex items-center space-x-3">
+        <span className="text-sm text-gray-700 font-medium">Tampilkan:</span>
         <Select
           value={itemsPerPage.toString()}
           onValueChange={(value) => handleItemsPerPageChange(Number(value))}
         >
-          <SelectTrigger className="w-20">
+          <SelectTrigger className="w-20 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -582,13 +592,13 @@ export default function OptimizedDashboard() {
             <SelectItem value="50">50</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-gray-700">
+        <span className="text-sm text-gray-600">
           per halaman
         </span>
       </div>
 
       {/* Pagination info */}
-      <div className="text-sm text-gray-700">
+      <div className="text-sm text-gray-700 font-medium">
         Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} mata kuliah
       </div>
 
@@ -711,14 +721,14 @@ export default function OptimizedDashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 shadow-sm">
+        <header className="bg-white border-b border-gray-300 shadow-sm">
           <div className="px-6 py-4">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">MONEV</h1>
+                <h1 className="text-2xl font-bold text-gray-800">MONEV</h1>
                 <p className="text-sm text-gray-600">Telkom University</p>
               </div>
             </div>
@@ -726,38 +736,21 @@ export default function OptimizedDashboard() {
         </header>
 
         <div className="p-6 space-y-6">
-          {/* Loading Stats */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <Skeleton className="h-12 w-12 rounded-lg" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[100px]" />
-                      <Skeleton className="h-6 w-[60px]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div> */}
-
           {/* Loading Table */}
           <Card>
-            <CardHeader>
-              <Skeleton className="h-8 w-[300px]" />
-              <Skeleton className="h-10 w-full" />
+            <CardHeader className="bg-gray-700 text-white">
+              <Skeleton className="h-8 w-[300px] bg-gray-600" />
+              <Skeleton className="h-10 w-full bg-gray-600" />
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Info</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
+                  <TableRow className="bg-gray-50 border-b-2 border-gray-200">
+                    <TableHead className="w-[50px] text-gray-800 font-semibold"></TableHead>
+                    <TableHead className="text-gray-800 font-semibold">Mata Kuliah</TableHead>
+                    <TableHead className="text-gray-800 font-semibold">Dosen</TableHead>
+                    <TableHead className="text-gray-800 font-semibold">Status</TableHead>
+                    <TableHead className="text-right text-gray-800 font-semibold">Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -774,13 +767,13 @@ export default function OptimizedDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-300 shadow-sm sticky top-0 z-10">
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <Breadcrumb className="items-center gap-2 hidden sm:flex">
                 <BreadcrumbItem className="flex items-center">
-                  <BreadcrumbLink href="/" className="flex items-center gap-2">
+                  <BreadcrumbLink href="/" className="flex items-center gap-2 text-gray-700 hover:text-gray-800 transition-colors">
                     <Home className="w-4 h-4" strokeWidth={3}/>
                     <span className="text-sm font-medium">Dashboard</span>
                   </BreadcrumbLink>
@@ -788,20 +781,26 @@ export default function OptimizedDashboard() {
               </Breadcrumb>
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1 sm:hidden" />
-                <Separator orientation="vertical" className="block sm:hidden h-6" />
+                <Separator orientation="vertical" className="block sm:hidden h-6 bg-gray-300" />
               </div>
               
               <div className="sm:hidden flex items-center">
-                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 ml-2">MONEV</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800 ml-2">MONEV</h1>
                 </div>
-                  </div>
+              </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing} className="px-3 py-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh} 
+                disabled={isRefreshing} 
+                className="px-3 py-2 bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200"
+              >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''} sm:mr-2`} />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
@@ -811,35 +810,23 @@ export default function OptimizedDashboard() {
       </header>
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Simple Data Update Info */}
-        {etlStatus && (
-          <div className="bg-gray-50 rounded-lg text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
-              <Clock className="w-4 h-4" />
-              <span>Terakhir update: <ClientDate dateString={etlStatus.data.lastRun?.end_date} /></span>
-              {etlStatus.data.isRunning && (
-                <div className="flex items-center gap-1 ml-2">
-                  <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
-                  <span className="text-blue-600 text-xs">Updating...</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <X className="w-5 h-5 text-red-600" />
-              <span className="text-red-800 font-medium">Error</span>
+          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-5 h-5 text-red-600" />
+              </div>
+              <span className="text-red-800 font-semibold text-lg">Error</span>
             </div>
-            <p className="text-red-700 mt-1 text-sm">{error}</p>
+            <p className="text-red-700 text-sm leading-relaxed mb-4">{error}</p>
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              className="mt-3"
+              className="bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
@@ -970,11 +957,11 @@ export default function OptimizedDashboard() {
 
         {/* Main Content */}
         <Card>
-          <CardHeader className="bg-teal-700 text-white">
+          <CardHeader className="bg-teal-800 text-white">
             <CardTitle className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-lg sm:text-xl">Course Performance</span>
               <div className="flex items-center justify-between sm:space-x-2">
-                <Badge variant="secondary" className="bg-white text-teal-700 hover:bg-white text-sm">
+                <Badge variant="secondary" className="bg-white text-gray-700 hover:bg-white text-sm">
                   {totalItems} mata kuliah
                 </Badge>
                 {/* {(filters.course_name !== "all" || filters.dosen_pengampu !== "all" || filters.activity_type !== "all" || globalSearch) && (
@@ -1011,7 +998,7 @@ export default function OptimizedDashboard() {
                 </div>
                 <Button
                   onClick={executeSearch}
-                  className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4"
+                  className="bg-white text-gray-700 hover:bg-gray-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4 shadow-sm transition-all duration-200"
                   size="default"
                 >
                   <Search className="w-4 h-4 mr-2" strokeWidth={3}/>
@@ -1026,12 +1013,12 @@ export default function OptimizedDashboard() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Mata Kuliah</TableHead>
-                    <TableHead className="hidden sm:table-cell">Dosen</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="text-right">Data</TableHead>
+                  <TableRow className="bg-gray-50 border-b-2 border-gray-200">
+                    <TableHead className="w-[50px] text-gray-800 font-semibold"></TableHead>
+                    <TableHead className="text-gray-800 font-semibold">Mata Kuliah</TableHead>
+                    <TableHead className="hidden sm:table-cell text-gray-800 font-semibold">Dosen</TableHead>
+                    <TableHead className="hidden sm:table-cell text-gray-800 font-semibold">Status</TableHead>
+                    <TableHead className="text-right text-gray-800 font-semibold">Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1051,47 +1038,71 @@ export default function OptimizedDashboard() {
 
                       return (
                         <React.Fragment key={course.course_id}>
-                          {/* Course Row */}
+                          {/* Course Row with Enhanced Styling */}
                           <TableRow
-                            className="cursor-pointer hover:bg-gray-50 border-b-2"
+                            className="cursor-pointer hover:bg-gray-100 border-b-2 border-gray-200 bg-gradient-to-r from-white to-gray-50"
                             onClick={() => toggleCourse(course.course_id)}
                           >
                             <TableCell className="p-3 sm:p-4">
-                              {isExpanded ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRightIcon className="w-4 h-4" />
-                              )}
+                              <div className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full">
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-700" />
+                                ) : (
+                                  <ChevronRightIcon className="w-4 h-4 text-gray-700" />
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="p-3 sm:p-4">
-                              <div className="space-y-1.5">
-                                <div className="font-medium text-sm sm:text-lg leading-tight">{course.course_name}</div>
-                                <div className="text-xs sm:text-sm text-gray-500">{course.kelas}</div>
-                                {/* Mobile: Show dosen here */}
-                                <div className="sm:hidden text-xs text-gray-600 font-medium flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  {course.dosen_pengampu}
+                              <div className="space-y-2">
+                                <div className="font-semibold text-sm sm:text-lg leading-tight text-gray-800">{course.course_name}</div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300 text-xs font-medium">
+                                    <GraduationCap className="w-3 h-3 mr-1" />
+                                    {course.kelas}
+                                  </Badge>
+                                  {/* Mobile: Show dosen here */}
+                                  <div className="sm:hidden text-xs text-gray-600 font-medium flex items-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    {course.dosen_pengampu}
+                                  </div>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                              <div className="space-y-1">
-                                <div className="font-medium">{course.dosen_pengampu}</div>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                              <div className="space-y-2">
+                                <div className="font-medium text-gray-800">{course.dosen_pengampu}</div>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 shadow-sm">
+                                  <BookOpen className="w-4 h-4 mr-1" />
                                   Mata Kuliah
                                 </Badge>
                               </div>
                             </TableCell>
                             <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                              <Badge variant="secondary">Aktif</Badge>
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Aktif
+                              </Badge>
                             </TableCell>
                             <TableCell className="text-right p-3 sm:p-4">
-                              <div className="text-xs sm:text-sm space-y-1">
-                                <div className="font-medium">{course.jumlah_aktivitas} aktivitas</div>
-                                <div className="text-gray-500">{course.jumlah_mahasiswa} mahasiswa</div>
+                              <div className="text-xs sm:text-sm space-y-2">
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="w-6 h-6 bg-orange-50 rounded-full flex items-center justify-center">
+                                    <Activity className="w-3 h-3 text-orange-600" />
+                                  </div>
+                                  <span className="font-semibold text-orange-700">{course.jumlah_aktivitas} aktivitas</span>
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
+                                    <Users className="w-3 h-3 text-blue-600" />
+                                  </div>
+                                  <span className="text-gray-600">{course.jumlah_mahasiswa} mahasiswa</span>
+                                </div>
                                 {/* Mobile: Show status here */}
-                                <div className="sm:hidden mt-2">
-                                  <Badge variant="secondary" className="text-xs">Aktif</Badge>
+                                <div className="sm:hidden mt-2 flex justify-end">
+                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Aktif
+                                  </Badge>
                                 </div>
                               </div>
                             </TableCell>
@@ -1099,89 +1110,126 @@ export default function OptimizedDashboard() {
 
                           {/* Activities Rows */}
                           {isExpanded && isLoadingCourseActivities && (
-                            <TableRow key={`loading-activities-${course.course_id}`}>
-                              <TableCell className="pl-6 sm:pl-8 p-3 sm:p-4"></TableCell>
-                              <TableCell colSpan={4} className="text-center py-6">
-                                <div className="flex items-center justify-center gap-2">
-                                  <RefreshCw className="w-4 h-4 animate-spin text-teal-600" />
-                                  <span className="text-sm text-gray-600">Loading activities...</span>
+                            <TableRow key={`loading-activities-${course.course_id}`} className="bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300">
+                              <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
+                                <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+                              </TableCell>
+                              <TableCell colSpan={4} className="text-center py-8">
+                                <div className="flex items-center justify-center gap-3">
+                                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <RefreshCw className="w-4 h-4 animate-spin text-gray-600" />
+                                  </div>
+                                  <span className="text-sm text-gray-700 font-medium">Loading activities...</span>
                                 </div>
                               </TableCell>
                             </TableRow>
                           )}
                           {isExpanded && !isLoadingCourseActivities && courseActivities.length === 0 && (
-                            <TableRow key={`empty-activities-${course.course_id}`}>
-                              <TableCell className="pl-6 sm:pl-8 p-3 sm:p-4"></TableCell>
+                            <TableRow key={`empty-activities-${course.course_id}`} className="bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300">
+                              <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
+                                <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+                              </TableCell>
                               <TableCell colSpan={4} className="p-0">
-                                <EmptyActivitiesState />
+                                <div className="py-6 px-4">
+                                  <EmptyActivitiesState />
+                                </div>
                               </TableCell>
                             </TableRow>
                           )}
                           {isExpanded && !isLoadingCourseActivities && courseActivities.length > 0 && courseActivities.map((activity, activityIndex) => {
                             return (
                               <React.Fragment key={`${course.course_name}-${course.course_id}-${activityIndex}`}>
-                                {/* Activity Row */}
-                                <TableRow className="hover:bg-gray-50 bg-gray-25">
-                                  <TableCell className="pl-6 sm:pl-8 p-3 sm:p-4">
-                                    <div className="w-4 h-4 flex items-center justify-center">
-                                      {getActivityIcon(activity.activity_type)}
-                                    </div>
+                                {/* Activity Row with Enhanced Visual Hierarchy */}
+                                <TableRow className="hover:bg-gray-100 bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300">
+                                  <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
+                                    {/* <div className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full p-1">
+                                      <div className="text-gray-600">
+                                        {getActivityIcon(activity.activity_type)}
+                                      </div>
+                                    </div> */}
                                   </TableCell>
                                   <TableCell className="p-3 sm:p-4">
-                                    <div className="space-y-2">
-                                      <div className="flex items-center">
-                                        <Badge className={`${getActivityColor(activity.activity_type)} border-0 text-xs`}>
+                                    <div className="space-y-3">
+                                      {/* Enhanced Activity Type Badge */}
+                                      <div className="flex items-center gap-2">
+                                        <Badge className={`${getActivityColor(activity.activity_type)} border-0 text-xs font-medium shadow-sm`}>
                                           {getActivityIcon(activity.activity_type)}
-                                          {activity.activity_type}
+                                          <span className="ml-1 capitalize">{activity.activity_type}</span>
+                                        </Badge>
+                                        {/* Section Badge */}
+                                        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300 text-xs font-medium">
+                                          <Hash className="w-3 h-3 mr-1" />
+                                          Section {activity.section}
                                         </Badge>
                                       </div>
-                                      <div>
-                                        <div className="font-medium text-sm leading-tight">{activity.activity_name}</div>
-                                        <div className="text-xs text-gray-500 mt-1">
-                                          Section {activity.section}
+                                      {/* Activity Name with Enhanced Typography */}
+                                      <div className="pl-2 border-l-2 border-gray-300">
+                                        <div className="font-semibold text-sm leading-tight text-gray-800">{activity.activity_name}</div>
+                                        <div className="text-xs text-gray-600 mt-1 font-medium flex items-center gap-1">
+                                          <Activity className="w-3 h-3" />
+                                          Aktivitas Pembelajaran
                                         </div>
                                       </div>
                                     </div>
                                   </TableCell>
                                   <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                                    <Badge variant="outline" className="bg-orange-50 text-orange-700">
+                                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 shadow-sm">
+                                      <ClipboardList className="w-3 h-3 mr-1" />
                                       Aktivitas
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                                    <div className="flex items-center gap-1 text-sm">
-                                      <Eye className="w-3 h-3" />
-                                      {activity.accessed_count} akses
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                                        <Eye className="w-4 h-4 text-blue-600" />
+                                      </div>
+                                      <div className="text-blue-700 font-medium">{activity.accessed_count} akses</div>
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-right p-3 sm:p-4">
-                                    <div className="space-y-2">
-                                      <div className="text-xs sm:text-sm space-y-1">
+                                    <div className="space-y-3">
+                                      {/* Enhanced Stats Display */}
+                                      <div className="text-xs sm:text-sm space-y-2">
                                         {/* Mobile: Show access count here */}
-                                        <div className="sm:hidden flex items-center justify-end gap-1 text-xs text-gray-600 mb-2">
-                                          <Eye className="w-3 h-3" />
-                                          {activity.accessed_count} akses
+                                        <div className="sm:hidden flex items-center justify-end gap-2 text-xs text-gray-600 mb-2">
+                                          <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
+                                            <Eye className="w-3 h-3 text-blue-600" />
+                                          </div>
+                                          <span className="text-blue-700 font-medium">{activity.accessed_count} akses</span>
                                         </div>
-                                        {activity.submission_count && (
-                                          <div className="text-blue-600">{activity.submission_count} submit</div>
-                                        )}
-                                        {activity.attempted_count && (
-                                          <div className="text-orange-600">{activity.attempted_count} attempt</div>
-                                        )}
-                                        {activity.graded_count && (
-                                          <div className="text-green-600">{activity.graded_count} graded</div>
-                                        )}
+                                        {/* Enhanced Activity Stats */}
+                                        <div className="flex flex-wrap gap-2 justify-end">
+                                          {activity.submission_count && (
+                                            <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-700 text-xs font-medium">
+                                              <CheckCircle className="w-3 h-3" />
+                                              {activity.submission_count} submit
+                                            </div>
+                                          )}
+                                          {activity.attempted_count && (
+                                            <div className="flex items-center gap-1 px-2 py-1 bg-orange-50 rounded-full text-orange-700 text-xs font-medium">
+                                              <ClipboardList className="w-3 h-3" />
+                                              {activity.attempted_count} attempt
+                                            </div>
+                                          )}
+                                          {activity.graded_count && (
+                                            <div className="flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full text-green-700 text-xs font-medium">
+                                              <Star className="w-3 h-3" />
+                                              {activity.graded_count} graded
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
+                                      {/* Enhanced Detail Button */}
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 px-3 text-xs w-full sm:w-auto"
+                                        className="h-8 px-4 text-xs w-full sm:w-auto bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 shadow-sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           window.open(`/activity-detail/${course.course_id}/${activity.activity_type}/${activity.activity_id}`, '_blank');
                                         }}
                                       >
-                                        <Eye className="w-3 h-3 mr-1" />
+                                        <Eye className="w-3 h-3 mr-2" />
                                         <span className="hidden sm:inline">Lihat Detail</span>
                                         <span className="sm:hidden">Detail</span>
                                       </Button>
@@ -1205,6 +1253,38 @@ export default function OptimizedDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ETL Status Info - Moved below table */}
+        {etlStatus && (
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                <Clock className="w-4 h-4 text-gray-600" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-700">
+                  Last running Updated: {new Date(etlStatus.status.lastRun.end_date).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+                <div className="text-xs text-gray-500">
+                  ETL Status: {etlStatus.status.status} • {etlStatus.status.isRunning ? 'Running' : 'Stopped'}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Status Indicator */}
+                <div className={`w-3 h-3 rounded-full ${
+                  etlStatus.status.lastRun.status === 'finished' ? 'bg-green-500' : 
+                  etlStatus.status.lastRun.status === 'inprogress' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

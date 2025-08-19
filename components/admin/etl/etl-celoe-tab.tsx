@@ -15,46 +15,125 @@ import {
     Loader2,
     AlertTriangle,
     Zap,
-    FileText
+    FileText,
+    Trash2,
+    Eye
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { ETLStatus, ETLLog } from '@/lib/etl-types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-    getETLStatus,
-    getETLLogs,
-    startFullETL,
-    startIncrementalETL,
-    clearStuckETL,
-    forceClearAllETL
-} from '@/lib/api/etl-course';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { formatDateTime, formatDuration } from '@/lib/utils/date-formatter';
+import { apiClient } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/config';
 
-interface CeLOEETLTabProps {}
+// New interfaces for the updated API
+interface CeLOEETLStatus {
+  status: boolean;
+  data: {
+    last_run: {
+      id: number;
+      start_date: string;
+      end_date: string | null;
+      status: string;
+      status_code: number;
+      message: string;
+      type: string;
+      numrow: number;
+      duration_seconds: number | null;
+    };
+    currently_running: number;
+    recent_activity: number;
+    watermark: {
+      last_extracted_date: string;
+      last_extracted_timecreated: string;
+      next_extract_date: string;
+      updated_at: string;
+      service: string;
+    };
+    service: string;
+  };
+}
 
-export default function CeLOEETLTab({}: CeLOEETLTabProps) {
-    const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
-    const [etlLogs, setEtlLogs] = useState<ETLLog[]>([]);
+interface CeLOEETLLog {
+  id: string;
+  offset: string;
+  numrow: string;
+  type: string;
+  message: string;
+  requested_start_date: string | null;
+  extracted_start_date: string | null;
+  extracted_end_date: string | null;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+  duration_seconds: string | null;
+  created_at: string;
+}
+
+interface CeLOEETLLogsResponse {
+  status: boolean;
+  data: CeLOEETLLog[];
+  pagination: {
+    limit: number;
+    offset: number;
+  };
+}
+
+interface CeLOEETLRunResponse {
+  status: boolean;
+  message: string;
+  date_range: {
+    start_date: string;
+    end_date: string;
+  };
+  concurrency: number;
+  log_id: number;
+}
+
+interface CeLOEETLCleanResponse {
+  status: boolean;
+  message: string;
+  log_id: number;
+  summary: {
+    tables: Record<string, number>;
+    total_affected: number;
+  };
+}
+
+interface CeLOEETLExportResponse {
+  success: boolean;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+  tables: Record<string, {
+    count: number;
+    hasNext: boolean;
+    nextOffset: number | null;
+    rows: Array<Record<string, any>>;
+  }>;
+}
+
+export default function CeLOEETLTab({}: {}) {
+    const [etlStatus, setEtlStatus] = useState<CeLOEETLStatus | null>(null);
+    const [etlLogs, setEtlLogs] = useState<CeLOEETLLog[]>([]);
     const [isLoadingStatus, setIsLoadingStatus] = useState(false);
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-    const [logLimit, setLogLimit] = useState(10);
-    const [logOffset, setlogOffset] = useState(1);
+    const [logLimit, setLogLimit] = useState(50);
+    const [logOffset, setLogOffset] = useState(0);
     const [hasConnectionError, setHasConnectionError] = useState(false);
 
-    const [isRunningFullETL, setIsRunningFullETL] = useState(false);
-    const [isRunningIncrementalETL, setIsRunningIncrementalETL] = useState(false);
-    const [isClearingStuck, setIsClearingStuck] = useState(false);
-    const [isForceClearingAll, setIsForceClearingAll] = useState(false);
-    const [lastClearStuckResponse, setLastClearStuckResponse] = useState<{
-        status: boolean;
-        message?: string;
-        result?: { action?: string; message?: string };
-    } | null>(null);
+    const [isRunningETL, setIsRunningETL] = useState(false);
+    const [isCleaning, setIsCleaning] = useState(false);
+    const [lastCleanResponse, setLastCleanResponse] = useState<CeLOEETLCleanResponse | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [selectedLog, setSelectedLog] = useState<CeLOEETLLog | null>(null);
 
     const handleFetchETLStatus = async () => {
         setIsLoadingStatus(true);
         try {
-            const response = await getETLStatus();
+            const response = await apiClient.get<CeLOEETLStatus>(API_ENDPOINTS.CP.ETL.STATUS);
             setEtlStatus(response);
             setHasConnectionError(false);
         } catch (error: any) {
@@ -75,8 +154,11 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
     const handleFetchETLLogs = async () => {
         setIsLoadingLogs(true);
         try {
-            const logs = await getETLLogs(logLimit, logOffset);
-            setEtlLogs(logs);
+            const response = await apiClient.get<CeLOEETLLogsResponse>(API_ENDPOINTS.CP.ETL.LOGS, { 
+                limit: logLimit, 
+                offset: logOffset 
+            });
+            setEtlLogs(response.data);
         } catch (error: any) {
             if (error.status !== 401) {
                 toast({
@@ -91,90 +173,81 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
         }
     };
 
-    const handleRunFullETL = async () => {
-        setIsRunningFullETL(true);
+    const handleRunETL = async () => {
+        setIsRunningETL(true);
         try {
-            await startFullETL();
+            const response = await apiClient.post<CeLOEETLRunResponse>(API_ENDPOINTS.CP.ETL.RUN);
             toast({
                 title: "ETL Started",
-                description: "Full ETL process has been started in background",
+                description: response.message,
             });
             setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
             if (error.status !== 401) {
                 toast({
                     title: "Error",
-                    description: error.message || "Failed to start full ETL",
+                    description: error.message || "Failed to start ETL",
                     variant: "destructive",
                 });
             }
-            console.error('Run Full ETL error:', error);
+            console.error('Run ETL error:', error);
         } finally {
-            setIsRunningFullETL(false);
+            setIsRunningETL(false);
         }
     };
 
-    const handleRunIncrementalETL = async () => {
-        setIsRunningIncrementalETL(true);
+    const handleCleanETL = async () => {
+        setIsCleaning(true);
         try {
-            await startIncrementalETL();
+            const response = await apiClient.post<CeLOEETLCleanResponse>(API_ENDPOINTS.CP.ETL.CLEAN);
+            setLastCleanResponse(response);
             toast({
-                title: "ETL Started",
-                description: "Incremental ETL process has been started in background",
+                title: "ETL Clean Success",
+                description: response.message,
             });
             setTimeout(() => handleFetchETLStatus(), 2000);
         } catch (error: any) {
             if (error.status !== 401) {
                 toast({
                     title: "Error",
-                    description: error.message || "Failed to start incremental ETL",
+                    description: error.message || "Failed to clean ETL data",
                     variant: "destructive",
                 });
             }
-            console.error('Run Incremental ETL error:', error);
+            console.error('Clean ETL error:', error);
         } finally {
-            setIsRunningIncrementalETL(false);
+            setIsCleaning(false);
         }
     };
 
-    const handleClearStuckETL = async () => {
-        setIsClearingStuck(true);
-        try {
-            const response = await clearStuckETL();
-            setLastClearStuckResponse(response);
-            setTimeout(() => handleFetchETLStatus(), 2000);
-        } catch (error: any) {
-            if (error.status !== 401) {
-                toast({
-                    title: "Error",
-                    description: error.message || "Failed to clear stuck ETL processes",
-                    variant: "destructive",
-                });
-                setLastClearStuckResponse(error.response);
-            }
-            console.error('Clear stuck ETL error:', error);
-        } finally {
-            setIsClearingStuck(false);
+    const handleOpenDetail = (log: CeLOEETLLog) => {
+        setSelectedLog(log);
+        setIsDetailOpen(true);
+    };
+
+    const getStatusBadgeVariant = (status: string) => {
+        switch (status) {
+            case '1': return 'default';      // finished
+            case '2': return 'secondary';    // inprogress
+            case '3': return 'destructive';  // error
+            default: return 'outline';
         }
     };
 
-    const handleForceClearAllETL = async () => {
-        setIsForceClearingAll(true);
-        try {
-            const response = await forceClearAllETL();
-            setLastClearStuckResponse(response);
-            setTimeout(() => handleFetchETLStatus(), 2000);
-        } catch (error: any) {
-            if (error.status !== 401) {
-                toast({
-                    title: "Error",
-                    description: error.message || "Failed to force clear all ETL processes",
-                    variant: "destructive",
-                });
-            }
-            console.error('Force clear all ETL error', error);
-        } finally {
-            setIsForceClearingAll(false);
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case '1': return 'Finished';     // finished
+            case '2': return 'In Progress';  // inprogress
+            case '3': return 'Error';        // error
+            default: return 'Unknown';
+        }
+    };
+
+    const getTypeBadgeVariant = (type: string) => {
+        switch (type) {
+            case 'run_cp_backfill': return 'default';
+            case 'clear': return 'secondary';
+            default: return 'outline';
         }
     };
 
@@ -213,35 +286,35 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button
-                                onClick={handleRunFullETL}
-                                disabled={isRunningFullETL || etlStatus?.data?.isRunning}
+                                onClick={handleRunETL}
+                                disabled={isRunningETL || etlStatus?.data.last_run?.status_code === 2}
                                 className="h-16"
                             >
-                                {isRunningFullETL ? (
+                                {isRunningETL ? (
                                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                                 ) : (
                                     <Database className="w-5 h-5 mr-2" />
                                 )}
                                 <div className="flex flex-col">
-                                    <span className="font-semibold">Run Full ETL</span>
-                                    <span className="text-xs opacity-80">Complete data extraction</span>
+                                    <span className="font-semibold">Run ETL</span>
+                                    <span className="text-xs opacity-80">Start data extraction</span>
                                 </div>
                             </Button>
 
                             <Button
-                                onClick={handleRunIncrementalETL}
-                                disabled={isRunningIncrementalETL || etlStatus?.data?.isRunning}
-                                variant="secondary"
-                                className="h-16"
+                                onClick={handleCleanETL}
+                                disabled={isCleaning}
+                                variant="outline"
+                                className="h-16 border-orange-200 hover:bg-orange-50"
                             >
-                                {isRunningIncrementalETL ? (
+                                {isCleaning ? (
                                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                                 ) : (
-                                    <Activity className="w-5 h-5 mr-2" />
+                                    <Trash2 className="w-5 h-5 mr-2 text-orange-600" />
                                 )}
                                 <div className="flex flex-col">
-                                    <span className="font-semibold">Run Incremental ETL</span>
-                                    <span className="text-xs opacity-80">Update recent changes</span>
+                                    <span className="font-semibold">Clean Data</span>
+                                    <span className="text-xs opacity-80">Clear all ETL data</span>
                                 </div>
                             </Button>
                         </div>
@@ -249,52 +322,31 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                 </Card>
             </div>
 
-            {/* ETL Maintenance Panel */}
-            <div className="grid gap-6 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                        onClick={handleClearStuckETL}
-                        disabled={isClearingStuck}
-                        variant="outline"
-                        className="h-16 border-orange-200 hover:bg-orange-50"
-                    >
-                        {isClearingStuck ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        ) : (
-                            <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
-                        )}
-                        <div className="flex flex-col">
-                            <span className="font-semibold">Clear Stuck Processes</span>
-                            <span className="text-xs opacity-80">Clear processes that are stuck</span>
+            {/* Clean Response Alert */}
+            {lastCleanResponse && (
+                <Alert className="mb-4" variant="default">
+                    <AlertTitle>{lastCleanResponse.message}</AlertTitle>
+                    <AlertDescription>
+                        <div className="mt-2">
+                            <div className="text-sm font-medium mb-2">Tables Affected:</div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {Object.entries(lastCleanResponse.summary.tables).map(([table, count]) => (
+                                    <div key={table} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                        <Database className="w-4 h-4 text-blue-600" />
+                                        <div>
+                                            <div className="font-medium text-xs">{table}</div>
+                                            <div className="text-xs text-gray-600">{count} records</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-2 text-sm text-gray-600">
+                                Total Affected: {lastCleanResponse.summary.total_affected} records
+                            </div>
                         </div>
-                    </Button>
-
-                    <Button
-                        onClick={handleForceClearAllETL}
-                        disabled={isForceClearingAll}
-                        variant="outline"
-                        className="h-16 border-red-200 hover:bg-red-50"
-                    >
-                        {isForceClearingAll ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        ) : (
-                            <Zap className="w-5 h-5 mr-2 text-red-600" />
-                        )}
-                        <div className="flex flex-col">
-                            <span className="font-semibold">Force Clear All</span>
-                            <span className="text-xs opacity-80">Clear all inprogress processes</span>
-                        </div>
-                    </Button>
-                </div>
-                {lastClearStuckResponse && (
-                    <Alert className="mt-4" variant={lastClearStuckResponse.status ? "default" : "destructive"}>
-                        <AlertTitle>{lastClearStuckResponse.message}</AlertTitle>
-                        <AlertDescription>
-                        {lastClearStuckResponse.result?.message}
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {/* ETL Status Display */}
             <div className="grid gap-6 mb-8">
@@ -311,11 +363,14 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="p-4 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className={`w-3 h-3 rounded-full ${etlStatus.data.isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                                            <div className={`w-3 h-3 rounded-full ${etlStatus.data.last_run?.status_code === 2 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                                             <span className="text-sm font-medium">Status</span>
                                         </div>
                                         <p className="text-lg font-semibold">
-                                            {etlStatus.data.isRunning ? 'Running' : etlStatus.data.status || 'Idle'}
+                                            {etlStatus.data.last_run?.status_code === 2 ? 'Running' : 'Idle'}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            {etlStatus.data.last_run?.status_code === 2 ? 'ETL sedang berjalan' : 'ETL tidak aktif'}
                                         </p>
                                     </div>
 
@@ -325,48 +380,74 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                                             <span className="text-sm font-medium">Last Run</span>
                                         </div>
                                         <p className="text-sm text-gray-700">
-                                            {formatDateTime(etlStatus.data.lastRun?.start_date || '') || 'Never'}
+                                            {etlStatus.data.last_run ? formatDateTime(etlStatus.data.last_run.start_date) : 'Never'}
                                         </p>
+                                        {etlStatus.data.last_run && (
+                                            <Badge variant={getStatusBadgeVariant(etlStatus.data.last_run.status_code.toString())} className="mt-1">
+                                                {getStatusText(etlStatus.data.last_run.status_code.toString())}
+                                            </Badge>
+                                        )}
                                     </div>
 
                                     <div className="p-4 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Database className="w-4 h-4 text-green-600" />
-                                            <span className="text-sm font-medium">Records Processed</span>
+                                            <span className="text-sm font-medium">Recent Activity</span>
                                         </div>
                                         <p className="text-lg font-semibold">
-                                            {etlStatus.data.lastRun?.total_records ? 
-                                                parseInt(etlStatus.data.lastRun.total_records).toLocaleString() : '0'
-                                            }
+                                            {etlStatus.data.recent_activity}
                                         </p>
+                                        <p className="text-sm text-gray-600">activities</p>
                                     </div>
                                 </div>
 
-                                {etlStatus.data.lastRun && (
+                                {etlStatus.data.last_run && (
                                     <div className="border-t pt-4">
                                         <h4 className="font-semibold mb-2">Last Run Details</h4>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                             <div>
-                                                <span className="text-gray-600">Start:</span>
+                                                <span className="text-gray-600">Type:</span>
+                                                <p className="font-medium">{etlStatus.data.last_run.type}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Records:</span>
+                                                <p className="font-medium">{etlStatus.data.last_run.numrow}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Duration:</span>
                                                 <p className="font-medium">
-                                                    {formatDateTime(etlStatus.data.lastRun.start_date)}
+                                                    {etlStatus.data.last_run.duration_seconds ? 
+                                                        `${etlStatus.data.last_run.duration_seconds}s` : 'N/A'
+                                                    }
                                                 </p>
                                             </div>
                                             <div>
-                                                <span className="text-gray-600">End:</span>
-                                                <p className="font-medium">
-                                                    {formatDateTime(etlStatus.data.lastRun.end_date)}
-                                                </p>
+                                                <span className="text-gray-600">Message:</span>
+                                                <p className="font-medium text-xs">{etlStatus.data.last_run.message}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {etlStatus.data.watermark && (
+                                    <div className="border-t pt-4">
+                                        <h4 className="font-semibold mb-2">Watermark Info</h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <span className="text-gray-600">Last Extracted:</span>
+                                                <p className="font-medium">{etlStatus.data.watermark.last_extracted_date}</p>
                                             </div>
                                             <div>
-                                                <span className="text-gray-600">Status:</span>
-                                                <Badge variant={etlStatus.data.lastRun.status === 'finished' ? 'default' : 'secondary'}>
-                                                    {etlStatus.data.lastRun.status}
-                                                </Badge>
+                                                <span className="text-gray-600">Next Extract:</span>
+                                                <p className="font-medium">{etlStatus.data.watermark.next_extract_date}</p>
                                             </div>
                                             <div>
-                                                <span className="text-gray-600">Offset:</span>
-                                                <p className="font-medium">{parseInt(etlStatus.data.lastRun.offset || '0').toLocaleString()}</p>
+                                                <span className="text-gray-600">Updated:</span>
+                                                <p className="font-medium">{etlStatus.data.watermark.updated_at}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Service:</span>
+                                                <p className="font-medium">{etlStatus.data.watermark.service}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -390,7 +471,7 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-purple-600" />
-                                    Riwayat
+                                    Riwayat ETL
                                 </CardTitle>
                             </div>
                             <div className="flex items-center gap-2">
@@ -428,40 +509,56 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                                     <div key={log.id || index} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
-                                                <Badge variant={log.status === 'finished' ? 'default' : 'secondary'}>
-                                                    {log.status}
+                                                <Badge variant={getStatusBadgeVariant(log.status)}>
+                                                    {getStatusText(log.status)}
+                                                </Badge>
+                                                <Badge variant={getTypeBadgeVariant(log.type)} className="text-xs">
+                                                    {log.type}
                                                 </Badge>
                                                 <span className="text-sm text-gray-600">ID: {log.id}</span>
                                                 <span className="text-xs text-gray-500">
                                                     {formatDateTime(log.created_at)}
                                                 </span>
                                             </div>
-                                            <span className="text-sm text-gray-500">
-                                                {formatDateTime(log.start_date)}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleOpenDetail(log)}
+                                                >
+                                                    <Eye className="w-4 h-4 mr-1" />
+                                                    Details
+                                                </Button>
+                                            </div>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                             <div>
-                                                <span className="text-gray-600">Duration:</span>
-                                                <p className="font-medium">
-                                                    {formatDuration(log.duration || '')}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-600">Records:</span>
-                                                <p className="font-medium">{parseInt(log.total_records || '0').toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-600">Offset:</span>
-                                                <p className="font-medium">{parseInt(log.offset || '0').toLocaleString()}</p>
+                                                <span className="text-gray-600">Start:</span>
+                                                <p className="font-medium">{formatDateTime(log.start_date)}</p>
                                             </div>
                                             <div>
                                                 <span className="text-gray-600">End:</span>
                                                 <p className="font-medium">
-                                                    {formatDateTime(log.end_date || '')}
+                                                    {log.end_date ? formatDateTime(log.end_date) : 'N/A'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Records:</span>
+                                                <p className="font-medium">{parseInt(log.numrow || '0').toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Duration:</span>
+                                                <p className="font-medium">
+                                                    {log.duration_seconds ? `${log.duration_seconds}s` : 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
+                                        {log.message && (
+                                            <div className="mt-2 pt-2 border-t">
+                                                <span className="text-gray-600 text-xs">Message:</span>
+                                                <p className="text-xs font-medium">{log.message}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -475,8 +572,94 @@ export default function CeLOEETLTab({}: CeLOEETLTabProps) {
                 </Card>
             </div>
 
+            {/* Log Detail Modal */}
+            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh]">
+                    <DialogHeader>
+                        <DialogTitle>ETL Log Details - ID: {selectedLog?.id}</DialogTitle>
+                        <DialogDescription>
+                            Informasi detail untuk proses ETL ini
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-96">
+                        {selectedLog ? (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Type:</span>
+                                        <Badge variant={getTypeBadgeVariant(selectedLog.type)} className="ml-2">
+                                            {selectedLog.type}
+                                        </Badge>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Status:</span>
+                                        <Badge variant={getStatusBadgeVariant(selectedLog.status)} className="ml-2">
+                                            {getStatusText(selectedLog.status)}
+                                        </Badge>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Start Date:</span>
+                                        <p className="font-medium">{formatDateTime(selectedLog.start_date)}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">End Date:</span>
+                                        <p className="font-medium">
+                                            {selectedLog.end_date ? formatDateTime(selectedLog.end_date) : 'N/A'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Records:</span>
+                                        <p className="font-medium">{parseInt(selectedLog.numrow || '0').toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Duration:</span>
+                                        <p className="font-medium">
+                                            {selectedLog.duration_seconds ? `${selectedLog.duration_seconds}s` : 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-2">
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Message:</span>
+                                        <p className="font-medium text-sm">{selectedLog.message}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 text-sm">Created At:</span>
+                                        <p className="font-medium">{formatDateTime(selectedLog.created_at)}</p>
+                                    </div>
+                                    {selectedLog.requested_start_date && (
+                                        <div>
+                                            <span className="text-gray-600 text-sm">Requested Start:</span>
+                                            <p className="font-medium">{selectedLog.requested_start_date}</p>
+                                        </div>
+                                    )}
+                                    {selectedLog.extracted_start_date && (
+                                        <div>
+                                            <span className="text-gray-600 text-sm">Extracted Start:</span>
+                                            <p className="font-medium">{selectedLog.extracted_start_date}</p>
+                                        </div>
+                                    )}
+                                    {selectedLog.extracted_end_date && (
+                                        <div>
+                                            <span className="text-gray-600 text-sm">Extracted End:</span>
+                                            <p className="font-medium">{selectedLog.extracted_end_date}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-600">No log selected.</p>
+                            </div>
+                        )}
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
+
             {/* Auto-refresh indicator */}
-            {etlStatus?.data?.isRunning && (
+            {etlStatus?.data.last_run?.status_code === 2 && (
                 <div className="fixed bottom-4 right-4">
                     <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
