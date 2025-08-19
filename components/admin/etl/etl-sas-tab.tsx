@@ -1,10 +1,43 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
+import {
+    Database,
+    Play,
+    Activity,
+    RefreshCw,
+    Clock,
+    Loader2,
+    AlertTriangle,
+    FileText,
+    Eye,
+    X,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Info,
+    Filter,
+    GraduationCap,
+    Building2,
+    BookOpen,
+    Book,
+    ChevronRight,
+    Plus,
+    Square
+} from 'lucide-react';
+import { startETLChart, getETLChartLogs, getETLChartLogDetail, streamETLChartLogs, getChartData } from '@/lib/api/etl-activity';
+import { formatDateTime, formatDuration } from '@/lib/utils/date-formatter';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FilterDropdown } from '@/components/filter-dropdown';
 import { 
   Table, 
   TableBody, 
@@ -33,9 +66,12 @@ import {
   ChevronDown,
   Eye 
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { startETLChart, getETLChartLogs, fetchETLChart, streamETLChartLogs, clearStuckETLChart } from '@/lib/api/etl-activity';
 import { ETLLog, ETLLogsResponse, ETLStreamData } from '@/lib/types';
+
+// Helper function to get current time string
+const getCurrentTimeString = (): string => {
+    return new Date().toLocaleTimeString();
+};
 
 export default function ExternalAPIsETLTab() {
     const [logs, setLogs] = useState<ETLLog[]>([]);
@@ -148,12 +184,12 @@ export default function ExternalAPIsETLTab() {
                 (data: string) => {
                     try {
                         const parsedData = JSON.parse(data);
-                        const timestamp = new Date().toLocaleTimeString();
+                        const timestamp = getCurrentTimeString();
                         const logMessage = `[${timestamp}] ${parsedData.message || data}`;
                         setStreamingLogs(prev => [...prev, logMessage]);
                     } catch {
                         // If not JSON, treat as plain text
-                        const timestamp = new Date().toLocaleTimeString();
+                        const timestamp = getCurrentTimeString();
                         const logMessage = `[${timestamp}] ${data}`;
                         setStreamingLogs(prev => [...prev, logMessage]);
                     }
@@ -170,7 +206,7 @@ export default function ExternalAPIsETLTab() {
                 },
                 // onOpen callback
                 () => {
-                    const timestamp = new Date().toLocaleTimeString();
+                    const timestamp = getCurrentTimeString();
                     setStreamingLogs(prev => [...prev, `[${timestamp}] Connected to ETL stream for log ID: ${logId}`]);
                 }
             );
@@ -195,7 +231,7 @@ export default function ExternalAPIsETLTab() {
         }
         setIsStreaming(false);
         setStreamExpanded(false);
-        const timestamp = new Date().toLocaleTimeString();
+        const timestamp = getCurrentTimeString();
         setStreamingLogs(prev => [...prev, `[${timestamp}] Disconnected from ETL stream`]);
     };
 
@@ -253,10 +289,10 @@ export default function ExternalAPIsETLTab() {
         }
     };
 
-    // Format date
+    // Format date using the utility function
     const formatDate = (dateString: string) => {
         try {
-            return new Date(dateString).toLocaleString();
+            return formatDateTime(dateString);
         } catch {
             return dateString;
         }

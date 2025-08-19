@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,9 +27,9 @@ import {
     BookOpen,
     Book,
     ChevronRight,
-    Plus
+    Plus,
+    Square
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     startFetchCategorySubject,
@@ -43,6 +44,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FilterDropdown } from '@/components/filter-dropdown';
+
+// Helper function to get current time string
+const getCurrentTimeString = (format: 'full' | 'time' = 'full'): string => {
+    const now = new Date();
+    return format === 'full' ? now.toLocaleString() : now.toLocaleTimeString();
+};
 
 interface FetchCategorySubjectProps { }
 
@@ -658,9 +665,9 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
                                     <Badge variant={runResponse.status ? "default" : "destructive"}>
                                         {runResponse.status ? "Success" : "Error"}
                                     </Badge>
-                                    <span className="text-sm text-gray-600">
-                                        {new Date().toLocaleString()}
-                                    </span>
+                                                                            <span className="text-sm text-gray-600">
+                                            {getCurrentTimeString('full')}
+                                        </span>
                                 </div>
                                 <div className="space-y-3">
                                     {runResponse.message && (
@@ -724,7 +731,7 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
                                                     <div key={index} className="flex items-start">
                                                         <span className="text-gray-500 mr-2">[{index + 1}]</span>
                                                         <span className="text-gray-400 mr-2">
-                                                            {new Date().toLocaleTimeString()}
+                                                            {getCurrentTimeString('time')}
                                                         </span>
                                                         <span className="text-white break-all">{message}</span>
                                                     </div>
@@ -880,7 +887,7 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
                                         <div key={entry.id || index} className="flex items-start">
                                             <span className="text-gray-500 mr-2">[{index + 1}]</span>
                                             <span className="text-gray-400 mr-2">
-                                                {new Date(entry.timestamp).toLocaleTimeString()}
+                                                {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : ''}
                                             </span>
                                             <span className={`mr-2 ${entry.level === 'error' ? 'text-red-400' :
                                                 entry.level === 'warning' ? 'text-yellow-400' :

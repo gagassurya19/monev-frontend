@@ -45,9 +45,9 @@ export const API_ENDPOINTS = {
   },
   SAS: {
     FILTER: {
-      FAKULTAS: '/api/v1/sas/filter/fakultas',
-      PROGRAM_STUDI: '/api/v1/sas/filter/prodi',
-      MATA_KULIAH: '/api/v1/sas/filter/matkul',
+      FAKULTAS: '/api/v1/sas-category-subject/filter/fakultas',
+      PROGRAM_STUDI: '/api/v1/sas-category-subject/filter/prodi',
+      MATA_KULIAH: '/api/v1/sas-category-subject/filter/matkul',
     },
     DATA: {
       CATEGORY_SUBJECT: '/api/v1/sas/data/category-subject',
@@ -60,10 +60,10 @@ export const API_ENDPOINTS = {
       CHART_CLEAR_STUCK: '/api/v1/sas/etl/clear-stuck',
     },
     FETCH: {
-      SUBJECT_CATEGORIES: '/api/v1/sas-etl/category-subject/run',
-      LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas-etl/category-subject/logs',
-      LOGS_DETAIL_SUBJECT_CATEGORIES: '/api/v1/sas-etl/logs/{logId}',
-      LOGS_REALTIME_SUBJECT_CATEGORIES: '/api/v1/sas-etl/logs/{logId}/realtime',
+      SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/category-subject/run',
+      LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas-category-subject/category-subject/logs',
+      LOGS_DETAIL_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}',
+      LOGS_REALTIME_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}/realtime',
     }
   },
   AUTH: {

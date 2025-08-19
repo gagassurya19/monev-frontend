@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { MataKuliahMultiSelect } from '@/components/matkul-multiselect';
 import { MatkulFilterOption } from '@/lib/types';
 import { getFakultas, getProdi } from '@/lib/api/activity';
+import ClientDate from '@/components/ClientDate';
 
 export default function TokenGeneratorPage() {
   const { user, isAuthenticated } = useAuth();
@@ -464,7 +465,7 @@ export default function TokenGeneratorPage() {
                           Expires in {Math.floor(tokenInfo.expiresIn / 60)}m {tokenInfo.expiresIn % 60}s
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(tokenInfo.payload.exp * 1000).toLocaleString()}
+                                                          <ClientDate dateString={new Date(tokenInfo.payload.exp * 1000).toISOString()} />
                         </p>
                       </div>
                     </div>

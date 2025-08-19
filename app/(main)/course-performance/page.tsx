@@ -1263,13 +1263,16 @@ export default function OptimizedDashboard() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-700">
-                  Last running Updated: {new Date(etlStatus.status.lastRun.end_date).toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  Last running Updated: <ClientDate 
+                    dateString={etlStatus.status.lastRun.end_date} 
+                    formatOptions={{
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }}
+                  />
                 </div>
                 <div className="text-xs text-gray-500">
                   ETL Status: {etlStatus.status.status} • {etlStatus.status.isRunning ? 'Running' : 'Stopped'}

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,7 @@ const UnauthorizedScreen: React.FC<{ error?: string | null }> = ({ error }) => (
           
           <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
             <code className="text-sm break-all">
-              {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/?token=YOUR_TOKEN
+              {process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?token=YOUR_TOKEN
             </code>
           </div>
           
@@ -203,15 +204,15 @@ const TokenExpiryWarning: React.FC = () => {
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { isAuthenticated, isLoading, error } = useAuth();
+  const pathname = usePathname();
   
   // Routes that don't require authentication
   const publicRoutes = ['/token-generator', '/login'];
   
   // Check if current route is public
   const isPublicRoute = React.useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return publicRoutes.some(route => window.location.pathname === route);
-  }, []);
+    return publicRoutes.some(route => pathname === route);
+  }, [pathname]);
 
   // If it's a public route, don't require authentication
   if (isPublicRoute) {

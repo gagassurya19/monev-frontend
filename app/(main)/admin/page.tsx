@@ -21,6 +21,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getHealthStatus, HealthResponse } from '@/lib/api/health';
+import ClientDate from '@/components/ClientDate';
 
 export default function AdminPage() {
     const { user, isAuthenticated } = useAuth();
@@ -298,7 +299,7 @@ export default function AdminPage() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Last Check</span>
                                     <span className="text-sm text-gray-500">
-                                        {healthData ? new Date(healthData.timestamp).toLocaleString() : 'Unknown'}
+                                        {healthData ? <ClientDate dateString={healthData.timestamp} /> : 'Unknown'}
                                     </span>
                                 </div>
                             </CardContent>
