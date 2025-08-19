@@ -413,14 +413,20 @@ export default function OptimizedDashboard() {
 
   // Computed stats from API data
   const stats = useMemo(() => {
-    const totalCourses = coursesData.total
+    const totalCourses = coursesData.total || 0
 
     // Calculate total activities from cache
     const totalActivities = Array.from(activitiesCache.values())
       .flat()
       .length
 
-    return { totalCourses, totalActivities }
+    // Calculate total students (placeholder for now)
+    const totalStudents = 0
+
+    // Calculate average grade (placeholder for now)
+    const avgGrade = 0
+
+    return { totalCourses, totalActivities, totalStudents, avgGrade }
   }, [coursesData.total, activitiesCache])
 
   // Chart data
@@ -844,7 +850,7 @@ export default function OptimizedDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Mata Kuliah</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalCourses.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">{(stats.totalCourses || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -858,7 +864,7 @@ export default function OptimizedDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Aktivitas</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalActivities.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">{(stats.totalActivities || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -872,7 +878,7 @@ export default function OptimizedDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Mahasiswa</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalStudents.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">{(stats.totalStudents || 0).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -886,7 +892,7 @@ export default function OptimizedDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Rata-rata Nilai</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.avgGrade.toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-gray-900">{(stats.avgGrade || 0).toFixed(1)}</p>
                 </div>
               </div>
             </CardContent>
@@ -1024,14 +1030,14 @@ export default function OptimizedDashboard() {
                 <TableBody>
                   {isRefreshing ? (
                     [...Array(5)].map((_, i) => <SkeletonTableRow key={i} />)
-                  ) : paginatedCourses.length === 0 ? (
+                  ) : !paginatedCourses || paginatedCourses.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="p-0">
                         <EmptyCoursesState />
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedCourses.map((course) => {
+                    (paginatedCourses || []).map((course) => {
                       const isExpanded = expandedCourses.has(course.course_id)
                       const courseActivities = activitiesCache.get(course.course_id) || []
                       const isLoadingCourseActivities = loadingActivities.has(course.course_id)
@@ -1255,7 +1261,7 @@ export default function OptimizedDashboard() {
         </Card>
 
         {/* ETL Status Info - Moved below table */}
-        {etlStatus && (
+        {etlStatus && etlStatus.status && etlStatus.status.lastRun && (
           <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
@@ -1263,19 +1269,23 @@ export default function OptimizedDashboard() {
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-700">
-                  Last running Updated: <ClientDate 
-                    dateString={etlStatus.status.lastRun.end_date} 
-                    formatOptions={{
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }}
-                  />
+                  Last running Updated: {etlStatus.status.lastRun.end_date ? (
+                    <ClientDate 
+                      dateString={etlStatus.status.lastRun.end_date} 
+                      formatOptions={{
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }}
+                    />
+                  ) : (
+                    'No data available'
+                  )}
                 </div>
                 <div className="text-xs text-gray-500">
-                  ETL Status: {etlStatus.status.status} • {etlStatus.status.isRunning ? 'Running' : 'Stopped'}
+                  ETL Status: {etlStatus.status.status || 'Unknown'} • {etlStatus.status.isRunning ? 'Running' : 'Stopped'}
                 </div>
               </div>
               <div className="flex items-center gap-2">
