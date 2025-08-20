@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/pagination";
 import { RefreshCw, Plus, X, Filter, GraduationCap, Building2, BookOpen, Book, ChevronDown, ChevronRight, BarChart3, TrendingUp, Sparkles, Users, School, Search, FileText, Video, MessageSquare, HelpCircle, Globe, Calculator, Clock } from "lucide-react";
 import { ActivityChart, generateSampleData } from "@/components/activity-chart";
+import { ChartSection, StatsCards, SummaryTable, DistributionPie } from "@/components/student-activities-summary";
 import ClientDate from "@/components/ClientDate";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { FilterDropdown } from "@/components/filter-dropdown";
@@ -62,19 +63,18 @@ interface CourseData {
 }
 
 interface ETLStatus {
-  status: boolean;
-  data: {
+  status: {
     status: string;
     lastRun: {
-      id: string;
+      id: number;
       start_date: string;
       end_date: string;
       status: string;
-      total_records: string;
-      offset: string;
+      offset: number;
     };
     nextRun: string;
     isRunning: boolean;
+    shouldRun: boolean;
   };
 }
 
@@ -111,6 +111,9 @@ export default function StudentActivitesSummaryPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const canFetch = hasApplied && (!!appliedFilters.prodiId || showAll);
 
   // ETL status state
   const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
@@ -134,13 +137,12 @@ export default function StudentActivitesSummaryPage() {
     fetchETLStatus()
   }, [])
 
-  // Load filters from localStorage on component mount
+  // Load filters from localStorage on component mount (do not auto-apply)
   useEffect(() => {
     const savedFilters = localStorage.getItem('analytics-filters');
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
-        setAppliedFilters(parsed);
         setSelectedUniversity(parsed.university);
         setSelectedFakultas(parsed.fakultasName || parsed.fakultas);
         setSelectedFakultasId(parsed.fakultasId || parsed.fakultas);
@@ -185,8 +187,6 @@ export default function StudentActivitesSummaryPage() {
   };
 
   const handleRemoveLevel = (levelToRemove: number) => {
-    let newFilters = { ...appliedFilters };
-
     if (levelToRemove === 2) {
       // Remove fakultas and all below
       setSelectedFakultas("");
@@ -196,21 +196,6 @@ export default function StudentActivitesSummaryPage() {
       setSelectedMataKuliah("");
       setSelectedMataKuliahId("");
       setCurrentLevel(1);
-      
-      // Auto-apply kampus filter when removing fakultas
-      newFilters = {
-        university: selectedUniversity,
-        universityCode: getKampusCode(selectedUniversity),
-        fakultas: "",
-        fakultasId: "",
-        fakultasName: "",
-        prodi: "",
-        prodiId: "",
-        prodiName: "",
-        mataKuliah: "",
-        mataKuliahId: "",
-        mataKuliahName: ""
-      };
     } else if (levelToRemove === 3) {
       // Remove prodi and all below
       setSelectedProdi("");
@@ -218,46 +203,12 @@ export default function StudentActivitesSummaryPage() {
       setSelectedMataKuliah("");
       setSelectedMataKuliahId("");
       setCurrentLevel(2);
-
-      // Auto-apply current filters up to fakultas level
-      newFilters = {
-        university: selectedUniversity,
-        universityCode: getKampusCode(selectedUniversity),
-        fakultas: selectedFakultas,
-        fakultasId: selectedFakultasId,
-        fakultasName: selectedFakultas,
-        prodi: "",
-        prodiId: "",
-        prodiName: "",
-        mataKuliah: "",
-        mataKuliahId: "",
-        mataKuliahName: ""
-      };
     } else if (levelToRemove === 4) {
       // Remove mata kuliah
       setSelectedMataKuliah("");
       setSelectedMataKuliahId("");
       setCurrentLevel(3);
-
-      // Auto-apply current filters up to prodi level
-      newFilters = {
-        university: selectedUniversity,
-        universityCode: getKampusCode(selectedUniversity),
-        fakultas: selectedFakultas,
-        fakultasId: selectedFakultasId,
-        fakultasName: selectedFakultas,
-        prodi: selectedProdi,
-        prodiId: selectedProdiId,
-        prodiName: selectedProdi,
-        mataKuliah: "",
-        mataKuliahId: "",
-        mataKuliahName: ""
-      };
     }
-
-    // Apply the filters automatically
-    setAppliedFilters(newFilters);
-    localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
   const handleUniversityChange = (value: string) => {
@@ -401,6 +352,7 @@ export default function StudentActivitesSummaryPage() {
     setAppliedFilters(newFilters);
     localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
     console.log("Filters applied:", newFilters);
+    setHasApplied(true);
   };
 
   // Check if there are any additional filters beyond university
@@ -439,6 +391,7 @@ export default function StudentActivitesSummaryPage() {
 
     setAppliedFilters(clearedFilters);
     localStorage.setItem('analytics-filters', JSON.stringify(clearedFilters));
+    setHasApplied(false);
   };
 
   // Generate chart subtitle based on applied filters
@@ -714,7 +667,8 @@ export default function StudentActivitesSummaryPage() {
                 Filter analytics data by university, faculty, program, and course
               </p> */}
             </div>
-            {hasAdditionalFiltersApplied() && (
+            <div className="flex items-center gap-2">
+            {(hasAdditionalFiltersApplied() || showAll) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -725,6 +679,18 @@ export default function StudentActivitesSummaryPage() {
                 Clear All
               </Button>
             )}
+            <div className="flex items-center gap-2 mr-2">
+              <label className="text-sm text-gray-700">Tampilkan semua</label>
+              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+            </div>
+             <Button
+                variant="default"
+                size="sm"
+                onClick={handleApplyFilter}
+              >
+                Apply
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -875,9 +841,9 @@ export default function StudentActivitesSummaryPage() {
               <div className="flex items-center gap-2 text-gray-600">
                 <Clock className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">
-                  Terakhir update: <ClientDate dateString={etlStatus.data.lastRun.end_date} />
+                  Terakhir update: <ClientDate dateString={etlStatus.status.lastRun.end_date} />
                 </span>
-                {etlStatus.data.isRunning && (
+                {etlStatus.status.isRunning && (
                   <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                     <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
                     <span className="text-blue-600 text-xs">Updating...</span>
@@ -888,146 +854,91 @@ export default function StudentActivitesSummaryPage() {
           )}
         </div>
 
-        {/* Chart Section */}
-        <div className="mb-8">
-          <ActivityChart 
-            data={generateSampleData()} 
-            title={appliedFilters.university}
-            subtitle={getChartSubtitle()}
-            className="shadow-lg"
-          />
-        </div>
+        {!canFetch ? (
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <Card className="mb-8 w-full max-w-xl">
+              <CardContent className="py-10 text-center">
+                <Filter className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">Filter diperlukan</h3>
+                <p className="text-sm text-gray-600">Silakan pilih minimal <span className="font-semibold">Program Studi (Prodi)</span> lalu klik Apply untuk memuat data.</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* Chart Section (API-driven) */}
+            <div className="mb-8">
+              <ChartSection
+                title={appliedFilters.university}
+                subtitle={getChartSubtitle()}
+                params={showAll ? {
+                  show_all: 'true',
+                } : {
+                  university: appliedFilters.university,
+                  fakultas_id: appliedFilters.fakultasId || undefined,
+                  prodi_id: appliedFilters.prodiId || undefined,
+                  subject_ids: appliedFilters.mataKuliahId || undefined,
+                  group_by: appliedFilters.mataKuliahId
+                    ? 'subject'
+                    : appliedFilters.prodiId
+                    ? 'subject'
+                    : appliedFilters.fakultasId
+                    ? 'prodi'
+                    : 'fakultas',
+                }}
+                className="shadow-lg"
+              />
+            </div>
 
-        {/* Stats Overview Section */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          {/* Left Side - Stats Cards */}
-          <div className="lg:w-1/2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Activities</p>
-                    <p className="text-3xl font-bold text-gray-900">2,547</p>
-                  </div>
-                  <div className="h-16 w-16 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="h-8 w-8 text-blue-600" />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  <span className="text-green-600 font-medium">+12%</span> from last week
-                </p>
+            {/* Stats Overview Section */}
+            <div className="flex flex-col lg:flex-row gap-6 mb-8">
+              {/* Left Side - Stats Cards (API-driven) */}
+              <div className="lg:w-1/2">
+                <StatsCards params={showAll ? {
+                  show_all: 'true',
+                } : {
+                  university: appliedFilters.university,
+                  fakultas_id: appliedFilters.fakultasId || undefined,
+                  prodi_id: appliedFilters.prodiId || undefined,
+                  subject_ids: appliedFilters.mataKuliahId || undefined,
+                }} />
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Average Score</p>
-                    <p className="text-3xl font-bold text-gray-900">3.2</p>
+              {/* Right Side - Activity Distribution Pie Chart (API-driven) */}
+              <div className="lg:w-1/2">
+                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm h-full">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Activity Distribution</h3>
+                    <p className="text-sm text-gray-600">Breakdown by activity type</p>
                   </div>
-                  <div className="h-16 w-16 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-8 w-8 text-green-600" />
-                  </div>
+                  <DistributionPie params={showAll ? { show_all: 'true' } : {
+                    university: appliedFilters.university,
+                    fakultas_id: appliedFilters.fakultasId || undefined,
+                    prodi_id: appliedFilters.prodiId || undefined,
+                    subject_ids: appliedFilters.mataKuliahId || undefined,
+                  }} />
                 </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  <span className="text-green-600 font-medium">+5%</span> improvement
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Users</p>
-                    <p className="text-3xl font-bold text-gray-900">1,234</p>
-                  </div>
-                  <div className="h-16 w-16 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Users className="h-8 w-8 text-purple-600" />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  <span className="text-green-600 font-medium">+8%</span> this month
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm h-full">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-                    <p className="text-3xl font-bold text-gray-900">87%</p>
-                  </div>
-                  <div className="h-16 w-16 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <School className="h-8 w-8 text-orange-600" />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  <span className="text-green-600 font-medium">+3%</span> from target
-                </p>
               </div>
             </div>
-          </div>
 
-          {/* Right Side - Activity Distribution Pie Chart */}
-          <div className="lg:w-1/2">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm h-full">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Activity Distribution</h3>
-                <p className="text-sm text-gray-600">Breakdown by activity type</p>
-              </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Quiz', value: 532, color: '#1e3a8a' },
-                        { name: 'Assignment', value: 687, color: '#ea580c' },
-                        { name: 'Video', value: 423, color: '#16a34a' },
-                        { name: 'Forum', value: 345, color: '#0ea5e9' },
-                        { name: 'URL', value: 560, color: '#9333ea' },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {[
-                        { name: 'Quiz', value: 532, color: '#1e3a8a' },
-                        { name: 'Assignment', value: 687, color: '#ea580c' },
-                        { name: 'Video', value: 423, color: '#16a34a' },
-                        { name: 'Forum', value: 345, color: '#0ea5e9' },
-                        { name: 'URL', value: 560, color: '#9333ea' },
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => [value, 'Activities']}
-                      labelStyle={{ color: '#374151' }}
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      formatter={(value, entry) => (
-                        <span style={{ color: entry.color, fontWeight: 'bold' }}>
-                          {value}
-                        </span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </div>
+            {/* Course Data Table (API-driven) */}
+            <Card>
+              <CardContent className="p-0">
+                <SummaryTable params={showAll ? {
+                  show_all: 'true',
+                } : {
+                  university: appliedFilters.university,
+                  fakultas_id: appliedFilters.fakultasId || '',
+                  prodi_id: appliedFilters.prodiId || '',
+                  subject_ids: appliedFilters.mataKuliahId || '',
+                }} />
+              </CardContent>
+            </Card>
+          </>
+        )}
 
-        {/* Course Data Table */}
+        {/* Course Data Table (disabled) */}
+        {false && (
         <Card>
           <CardHeader className="bg-teal-700 text-white">
             {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1498,6 +1409,7 @@ export default function StudentActivitesSummaryPage() {
             </div>
           </CardContent>
         </Card>
+        )}
       </main>
     </div>
   )

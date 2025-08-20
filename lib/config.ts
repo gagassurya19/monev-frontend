@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
       CATEGORY_SUBJECT: '/api/v1/sas/data/category-subject',
     },
     ETL: {
-      STATUS: '/api/v1/sas/etl/status',
+      STATUS: '/api/v1/etl-sas/status',
       LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas/etl/history',
       LOGS_REALTIME: '/api/v1/sas-etl/logs/{log}/realtime',
       CHART_FETCH: '/api/v1/sas/etl/fetch',
