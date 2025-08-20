@@ -47,6 +47,7 @@ export interface SASETLHistoryResponse {
 }
 
 export interface SASETLLog {
+    total_records: ReactNode;
     id: number;
     start_date: string;
     end_date: string;
