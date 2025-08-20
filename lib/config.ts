@@ -64,6 +64,12 @@ export const API_ENDPOINTS = {
       LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas-category-subject/category-subject/logs',
       LOGS_DETAIL_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}',
       LOGS_REALTIME_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}/realtime',
+    },
+    ETL_MONEV: {
+      RUN: '/api/v1/etl-sas/run',
+      HISTORY: '/api/v1/etl-sas/history',
+      STATUS: '/api/v1/etl-sas/status',
+      TEST_API: '/api/v1/etl-sas/test-api',
     }
   },
   AUTH: {

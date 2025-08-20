@@ -6,6 +6,12 @@ import {
   ETLClearStuckResponse,
   ETLStreamData,
 } from '../types';
+import {
+  SASETLHistoryResponse,
+  SASETLRunResponse,
+  SASETLStatusResponse,
+  SASETLTestAPIResponse,
+} from '../etl-types';
 
 /**
  * Start ETL chart process
@@ -380,6 +386,135 @@ export async function getCategorySubjectData(params: {
     return response;
   } catch (error) {
     console.error('Error fetching category subject data:', error);
+    throw error;
+  }
+}
+
+/**
+ * SAS ETL Operations
+ */
+
+/**
+ * Get SAS ETL history with pagination
+ * @param params - Query parameters for pagination
+ * @returns Promise<SASETLHistoryResponse>
+ */
+export async function getSASETLHistory(params: {
+  limit?: number;
+  offset?: number;
+} = {}): Promise<SASETLHistoryResponse> {
+  try {
+    // SAS ETL uses different base URL
+    const baseURL = 'http://localhost:3001';
+    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.HISTORY;
+    
+    const queryString = new URLSearchParams();
+    if (params.limit) queryString.append('limit', params.limit.toString());
+    if (params.offset) queryString.append('offset', params.offset.toString());
+    
+    const response = await fetch(`${url}?${queryString}`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching SAS ETL history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Run SAS ETL process
+ * @returns Promise<SASETLRunResponse>
+ */
+export async function runSASETL(): Promise<SASETLRunResponse> {
+  try {
+    // SAS ETL uses different base URL
+    const baseURL = 'http://localhost:3001';
+    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.RUN;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
+      },
+      body: ''
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error running SAS ETL process:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get SAS ETL status
+ * @returns Promise<SASETLStatusResponse>
+ */
+export async function getSASETLStatus(): Promise<SASETLStatusResponse> {
+  try {
+    // SAS ETL uses different base URL
+    const baseURL = 'http://localhost:3001';
+    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.STATUS;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching SAS ETL status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Test SAS API connection
+ * @returns Promise<SASETLTestAPIResponse>
+ */
+export async function testSASAPI(): Promise<SASETLTestAPIResponse> {
+  try {
+    // SAS ETL uses different base URL
+    const baseURL = 'http://localhost:3001';
+    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.TEST_API;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error testing SAS API connection:', error);
     throw error;
   }
 }

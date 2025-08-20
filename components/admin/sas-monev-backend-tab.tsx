@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Lock, Database, Activity, Server, BarChart3, Settings, FileText, Play, RefreshCw, Loader2, AlertTriangle, Eye, X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import FetchCategorySubject from '@/components/admin/fetch/fetch-category-subject';
+import FetchStudentActivitySummary from '@/components/admin/fetch/fetch-student-activity-summary';
 import { useState } from 'react';
 
 export default function MonevBackendSAS() {
@@ -91,37 +92,7 @@ export default function MonevBackendSAS() {
             <div className="mt-8">
                 {activeSection === 'category-subject' && (<FetchCategorySubject />)}
 
-                {activeSection === 'data-activity' && (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-4">
-                            <BarChart3 className="w-5 h-5 text-green-600" />
-                            <h2 className="text-xl font-semibold">Data Activity Management</h2>
-                        </div>
-
-                        {/* Placeholder for Data Activity */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Activity className="w-5 h-5 text-green-600" />
-                                    Data Activity Operations
-                                </CardTitle>
-                                <CardDescription>
-                                    This feature is currently under development. Check back soon for data activity management capabilities.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-center py-8">
-                                    <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
-                                    <p className="text-gray-600 max-w-md mx-auto">
-                                        Data activity management features are being developed. This will include monitoring,
-                                        analysis, and management of data activity operations.
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                {activeSection === 'data-activity' && <FetchStudentActivitySummary />}
             </div>
         </div>
     );
