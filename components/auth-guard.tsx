@@ -95,21 +95,21 @@ const UnauthorizedScreen: React.FC<{ error?: string | null }> = ({ error }) => (
             <LogIn className="w-4 h-4 mr-2" />
              Admin Login
           </Button>
-          <Button
+          {/* <Button
             onClick={() => window.location.reload()}
             className="w-full"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Ulangi Autentikasi
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             variant='outline'
             onClick={() => window.location.href = '/token-generator'}
             className="w-full"
           >
             <Key className="w-4 h-4 mr-2" />
             Generate Test Token (Testing only)
-          </Button>
+          </Button> */}
         </div>
       </CardContent>
     </Card>

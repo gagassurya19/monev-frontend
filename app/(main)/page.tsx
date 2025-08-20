@@ -41,6 +41,14 @@ export default function Home() {
       color: "text-red-600",
       adminOnly: true
     },
+    {
+      title: "Token Generator",
+      description: "Generate JWT tokens user access",
+      href: "/token-generator",
+      icon: Users,
+      color: "text-green-600",
+      adminOnly: true
+    }
   ]
 
   return (
