@@ -2,6 +2,8 @@
 
 import React from "react";
 import { ActivityChart, ActivityData } from "@/components/activity-chart";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/lib/config";
 
 export type ChartSectionProps = {
   title?: string;
@@ -39,7 +41,6 @@ export function ChartSection({ title, subtitle, params, className }: ChartSectio
     const qp = new URLSearchParams();
     if (!p) return "";
     Object.entries(p).forEach(([k, v]) => {
-      if (k === 'show_all') return; // do not forward to backend
       if (typeof v === "string" && v) qp.set(k, v);
     });
     return qp.toString() ? `?${qp.toString()}` : "";
@@ -49,9 +50,11 @@ export function ChartSection({ title, subtitle, params, className }: ChartSectio
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetch(`/api/sas/summary/chart${buildQuery(params)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: { data: ApiChartItem[] } = await res.json();
+      // Filter out show_all parameter before sending to backend
+      const filteredParams = appliedParams ? Object.fromEntries(
+        Object.entries(appliedParams).filter(([k, v]) => k !== 'show_all' && v)
+      ) : {};
+      const json: { data: ApiChartItem[] } = await apiClient.get(API_ENDPOINTS.SAS.SUMMARY.CHART, filteredParams);
       const transformed: ActivityData[] = json.data.map((row) => ({
         category: row.category,
         Quiz: row.quiz,
@@ -67,7 +70,7 @@ export function ChartSection({ title, subtitle, params, className }: ChartSectio
     } finally {
       setIsLoading(false);
     }
-  }, [params]);
+  }, [appliedParams]);
 
   React.useEffect(() => {
     if (!params) return;

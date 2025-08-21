@@ -3,6 +3,8 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Users, School } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/lib/config";
 
 export type StatsCardsProps = {
   params?: {
@@ -34,7 +36,6 @@ export function StatsCards({ params }: StatsCardsProps) {
     const qp = new URLSearchParams();
     if (!p) return "";
     Object.entries(p).forEach(([k, v]) => {
-      if (k === 'show_all') return; // do not forward to backend
       if (typeof v === "string" && v) qp.set(k, v);
     });
     return qp.toString() ? `?${qp.toString()}` : "";
@@ -52,8 +53,11 @@ export function StatsCards({ params }: StatsCardsProps) {
       if (!appliedParams) return;
       try {
         setLoading(true);
-        const res = await fetch(`/api/sas/summary/stats${buildQuery(appliedParams)}`);
-        const json: StatsResponse = await res.json();
+        // Filter out show_all parameter before sending to backend
+        const filteredParams = Object.fromEntries(
+          Object.entries(appliedParams).filter(([k, v]) => k !== 'show_all' && v)
+        );
+        const json: StatsResponse = await apiClient.get(API_ENDPOINTS.SAS.SUMMARY.STATS, filteredParams);
         setData(json.data);
       } catch {
         setData(null);

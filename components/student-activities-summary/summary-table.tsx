@@ -7,6 +7,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/lib/config";
 
 type SummaryRow = {
   id: number
@@ -73,9 +75,17 @@ export function SummaryTable({ params }: SummaryTableProps) {
   const fetchRows = React.useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/sas/summary/table${buildQuery()}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json: TableApiResponse = await res.json()
+      const queryParams = {
+        page,
+        limit,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        ...(searchTerm && { search: searchTerm }),
+        ...(appliedParams && Object.fromEntries(
+          Object.entries(appliedParams).filter(([k, v]) => k !== 'show_all' && v)
+        ))
+      };
+      const json: TableApiResponse = await apiClient.get(API_ENDPOINTS.SAS.SUMMARY.TABLE, queryParams);
       setRows(json.data)
       setTotalPages(json.pagination.total_pages)
     } catch {

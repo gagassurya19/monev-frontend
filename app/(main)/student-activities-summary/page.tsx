@@ -675,7 +675,7 @@ export default function StudentActivitesSummaryPage() {
                 onClick={clearAllFilters}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
               >
-                <X className="w-4 h-4 mr-2" />
+                <X className="h-4 w-4 mr-2" />
                 Clear All
               </Button>
             )}
@@ -683,7 +683,7 @@ export default function StudentActivitesSummaryPage() {
               <label className="text-sm text-gray-700">Tampilkan semua</label>
               <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             </div>
-             <Button
+            <Button
                 variant="default"
                 size="sm"
                 onClick={handleApplyFilter}

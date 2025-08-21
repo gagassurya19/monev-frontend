@@ -2,6 +2,8 @@
 
 import React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/lib/config";
 
 export type DistributionPieProps = {
   params?: {
@@ -47,7 +49,6 @@ export function DistributionPie({ params, className }: DistributionPieProps) {
     const qp = new URLSearchParams();
     if (!p) return "";
     Object.entries(p).forEach(([k, v]) => {
-      if (k === "show_all") return; // do not forward to backend
       if (typeof v === "string" && v) qp.set(k, v);
     });
     return qp.toString() ? `?${qp.toString()}` : "";
@@ -65,8 +66,11 @@ export function DistributionPie({ params, className }: DistributionPieProps) {
       if (!appliedParams) return;
       try {
         setLoading(true);
-        const res = await fetch(`/api/sas/summary/stats${buildQuery(appliedParams)}`);
-        const json: StatsResponse = await res.json();
+        // Filter out show_all parameter before sending to backend
+        const filteredParams = Object.fromEntries(
+          Object.entries(appliedParams).filter(([k, v]) => k !== 'show_all' && v)
+        );
+        const json: StatsResponse = await apiClient.get(API_ENDPOINTS.SAS.SUMMARY.STATS, filteredParams);
         const dist = json?.data?.distribution || {};
         const entries = Object.entries(dist)
           .filter(([, v]) => typeof v === "number")
