@@ -129,6 +129,10 @@ export default function CeLOEETLTab({}: {}) {
     const [lastCleanResponse, setLastCleanResponse] = useState<CeLOEETLCleanResponse | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<CeLOEETLLog | null>(null);
+    
+    // ETL Run Parameters
+    const [startDate, setStartDate] = useState('2024-01-01');
+    const [concurrency, setConcurrency] = useState(4);
 
     const handleFetchETLStatus = async () => {
         setIsLoadingStatus(true);
@@ -176,7 +180,12 @@ export default function CeLOEETLTab({}: {}) {
     const handleRunETL = async () => {
         setIsRunningETL(true);
         try {
-            const response = await apiClient.post<CeLOEETLRunResponse>(API_ENDPOINTS.CP.ETL.RUN);
+            const requestBody = {
+                start_date: startDate,
+                concurrency: concurrency
+            };
+            
+            const response = await apiClient.post<CeLOEETLRunResponse>(API_ENDPOINTS.CP.ETL.RUN, requestBody);
             toast({
                 title: "ETL Started",
                 description: response.message,
@@ -284,6 +293,38 @@ export default function CeLOEETLTab({}: {}) {
                         </div>
                     </CardHeader>
                     <CardContent>
+                        {/* ETL Run Parameters */}
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="cp-start-date" className="text-sm font-medium text-gray-700">
+                                        Start Date
+                                    </label>
+                                    <input
+                                        id="cp-start-date"
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="cp-concurrency" className="text-sm font-medium text-gray-700">
+                                        Concurrency
+                                    </label>
+                                    <input
+                                        id="cp-concurrency"
+                                        type="number"
+                                        min="1"
+                                        max="10"
+                                        value={concurrency}
+                                        onChange={(e) => setConcurrency(Number(e.target.value))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button
                                 onClick={handleRunETL}

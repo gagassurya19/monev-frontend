@@ -214,6 +214,66 @@ class ApiClient {
   async delete<T>(endpoint: string, queryParams?: Record<string, any>): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' }, queryParams);
   }
+
+  // Make request with custom base URL (for SAS ETL endpoints)
+  async requestWithCustomBase<T>(
+    baseURL: string,
+    endpoint: string,
+    options: RequestInit = {},
+    queryParams?: Record<string, any>
+  ): Promise<T> {
+    const url = baseURL + endpoint + (queryParams ? this.buildQueryString(queryParams) : '');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      
+      // Handle network errors
+      throw new ApiError(
+        'NETWORK_ERROR',
+        'Failed to connect to the server. Please check your internet connection.',
+        error,
+        0
+      );
+    }
+  }
+
+  // GET request helper with custom base URL
+  async getWithCustomBase<T>(baseURL: string, endpoint: string, queryParams?: Record<string, any>): Promise<T> {
+    return this.requestWithCustomBase<T>(baseURL, endpoint, { method: 'GET' }, queryParams);
+  }
+
+  // POST request helper with custom base URL
+  async postWithCustomBase<T>(baseURL: string, endpoint: string, data?: any, queryParams?: Record<string, any>): Promise<T> {
+    return this.requestWithCustomBase<T>(
+      baseURL,
+      endpoint,
+      {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      queryParams
+    );
+  }
 }
 
 // Create and export a singleton instance

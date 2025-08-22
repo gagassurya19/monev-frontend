@@ -836,7 +836,7 @@ export default function StudentActivitesSummaryPage() {
           </div>
 
           {/* ETL Status */}
-          {etlStatus && (
+          {etlStatus && etlStatus.status && etlStatus.status.lastRun && (
             <div className="bg-gray-50 rounded-lg p-3 text-sm mt-4">
               <div className="flex items-center gap-2 text-gray-600">
                 <Clock className="w-4 h-4 flex-shrink-0" />

@@ -23,12 +23,13 @@ export interface KampusResponse {
 
 export async function getFakultas(search = '', page = 1, limit = 20): Promise<FilterResponse> {
   try {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    params.append('page', page.toString());
-    params.append('limit', limit.toString());
+    const queryParams: Record<string, any> = {
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    if (search) queryParams.search = search;
     
-    const response = await apiClient.get<FilterResponse>(`${API_ENDPOINTS.SAS.FILTER.FAKULTAS}?${params.toString()}`);
+    const response = await apiClient.get<FilterResponse>(API_ENDPOINTS.SAS.FILTER.FAKULTAS, queryParams);
     return response;
   } catch (error) {
     console.error('Error fetching fakultas:', error);
@@ -38,14 +39,15 @@ export async function getFakultas(search = '', page = 1, limit = 20): Promise<Fi
 
 export async function getProdi(fakultas: string | number, kampus = 'bdg', search = '', page = 1, limit = 20): Promise<FilterResponse> {
   try {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    params.append('fakultas', fakultas.toString());
-    params.append('kampus', kampus);
-    params.append('page', page.toString());
-    params.append('limit', limit.toString());
+    const queryParams: Record<string, any> = {
+      fakultas: fakultas.toString(),
+      kampus,
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    if (search) queryParams.search = search;
     
-    const response = await apiClient.get<FilterResponse>(`${API_ENDPOINTS.SAS.FILTER.PROGRAM_STUDI}?${params.toString()}`);
+    const response = await apiClient.get<FilterResponse>(API_ENDPOINTS.SAS.FILTER.PROGRAM_STUDI, queryParams);
     return response;
   } catch (error) {
     console.error('Error fetching prodi:', error);
@@ -55,13 +57,14 @@ export async function getProdi(fakultas: string | number, kampus = 'bdg', search
 
 export async function getMatkul(prodi: string | number, search = '', page = 1, limit = 20): Promise<MatkulFilterResponse> {
   try {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    params.append('prodi', prodi.toString());
-    params.append('page', page.toString());
-    params.append('limit', limit.toString());
+    const queryParams: Record<string, any> = {
+      prodi: prodi.toString(),
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    if (search) queryParams.search = search;
     
-    const response = await apiClient.get<MatkulFilterResponse>(`${API_ENDPOINTS.SAS.FILTER.MATA_KULIAH}?${params.toString()}`);
+    const response = await apiClient.get<MatkulFilterResponse>(API_ENDPOINTS.SAS.FILTER.MATA_KULIAH, queryParams);
     return response;
   } catch (error) {
     console.error('Error fetching matkul:', error);

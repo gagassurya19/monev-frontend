@@ -1,5 +1,6 @@
 import { apiClient } from '../api-client';
 import { API_ENDPOINTS } from '../config';
+import { API_CONFIG } from '../config';
 import {
   ETLStartResponse,
   ETLLogsResponse,
@@ -395,36 +396,24 @@ export async function getCategorySubjectData(params: {
  */
 
 /**
- * Get SAS ETL history with pagination
- * @param params - Query parameters for pagination
+ * Get SAS ETL history
+ * @param params - Query parameters
  * @returns Promise<SASETLHistoryResponse>
  */
-export async function getSASETLHistory(params: {
-  limit?: number;
-  offset?: number;
-} = {}): Promise<SASETLHistoryResponse> {
+export async function getSASETLHistory(params: { limit?: number; offset?: number } = {}): Promise<SASETLHistoryResponse> {
   try {
-    // SAS ETL uses different base URL
-    const baseURL = 'http://localhost:3001';
-    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.HISTORY;
+    const url = API_ENDPOINTS.SAS.ETL_MONEV.HISTORY;
     
     const queryString = new URLSearchParams();
     if (params.limit) queryString.append('limit', params.limit.toString());
     if (params.offset) queryString.append('offset', params.offset.toString());
     
-    const response = await fetch(`${url}?${queryString}`, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
-      }
-    });
+    const response = await apiClient.getWithCustomBase<SASETLHistoryResponse>(
+      API_CONFIG.BASE_URL,
+      `${url}?${queryString}`
+    );
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
+    return response;
   } catch (error) {
     console.error('Error fetching SAS ETL history:', error);
     throw error;
@@ -437,24 +426,15 @@ export async function getSASETLHistory(params: {
  */
 export async function runSASETL(): Promise<SASETLRunResponse> {
   try {
-    // SAS ETL uses different base URL
-    const baseURL = 'http://localhost:3001';
-    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.RUN;
+    const url = API_ENDPOINTS.SAS.ETL_MONEV.RUN;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
-      },
-      body: ''
-    });
+    const response = await apiClient.postWithCustomBase<SASETLRunResponse>(
+      API_CONFIG.BASE_URL,
+      url,
+      ''
+    );
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
+    return response;
   } catch (error) {
     console.error('Error running SAS ETL process:', error);
     throw error;
@@ -467,23 +447,14 @@ export async function runSASETL(): Promise<SASETLRunResponse> {
  */
 export async function getSASETLStatus(): Promise<SASETLStatusResponse> {
   try {
-    // SAS ETL uses different base URL
-    const baseURL = 'http://localhost:3001';
-    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.STATUS;
+    const url = API_ENDPOINTS.SAS.ETL_MONEV.STATUS;
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
-      }
-    });
+    const response = await apiClient.getWithCustomBase<SASETLStatusResponse>(
+      API_CONFIG.BASE_URL,
+      url
+    );
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
+    return response;
   } catch (error) {
     console.error('Error fetching SAS ETL status:', error);
     throw error;
@@ -496,23 +467,14 @@ export async function getSASETLStatus(): Promise<SASETLStatusResponse> {
  */
 export async function testSASAPI(): Promise<SASETLTestAPIResponse> {
   try {
-    // SAS ETL uses different base URL
-    const baseURL = 'http://localhost:3001';
-    const url = baseURL + API_ENDPOINTS.SAS.ETL_MONEV.TEST_API;
+    const url = API_ENDPOINTS.SAS.ETL_MONEV.TEST_API;
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0'
-      }
-    });
+    const response = await apiClient.getWithCustomBase<SASETLTestAPIResponse>(
+      API_CONFIG.BASE_URL,
+      url
+    );
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
+    return response;
   } catch (error) {
     console.error('Error testing SAS API connection:', error);
     throw error;

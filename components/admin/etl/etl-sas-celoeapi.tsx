@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, BarChart3, CheckCircle2, Database, FileText, Loader2, Play, RefreshCw, Trash2, Server, Clock, Info, Layers3 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS } from "@/lib/config";
+import { API_CONFIG } from "@/lib/config";
 
 // Local types for CELOEAPI SAS ETL endpoints
 interface CeloeapiSasEtlStatusResponse {
@@ -175,78 +178,6 @@ interface CeloeapiSasEtlExportResponse {
   };
 }
 
-const BASE_URL = "http://localhost:3001";
-// NOTE: Per provided cURL, the Authorization header is a raw token (not Bearer)
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuayIsIm5hbWUiOiJuayIsImthbXB1cyI6IiIsImZha3VsdGFzIjoiIiwicHJvZGkiOiIiLCJhZG1pbiI6dHJ1ZSwiZXhwIjoxNzg3MDczODUxLCJpYXQiOjE3NTU1Mzc4NTF9.bW5pbjR0";
-
-async function getStatus(): Promise<CeloeapiSasEtlStatusResponse> {
-  const res = await fetch(`${BASE_URL}/api/v1/celoeapi/sas/etl/status`, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: AUTH_TOKEN,
-    },
-  });
-  if (!res.ok) throw new Error(`Status HTTP ${res.status}`);
-  return res.json();
-}
-
-async function runEtl(): Promise<CeloeapiSasEtlRunResponse> {
-  const res = await fetch(`${BASE_URL}/api/v1/celoeapi/sas/etl/run`, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      Authorization: AUTH_TOKEN,
-    },
-    body: "",
-  });
-  if (!res.ok) throw new Error(`Run HTTP ${res.status}`);
-  return res.json();
-}
-
-async function cleanEtl(): Promise<CeloeapiSasEtlCleanResponse> {
-  const res = await fetch(`${BASE_URL}/api/v1/celoeapi/sas/etl/clean`, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      Authorization: AUTH_TOKEN,
-    },
-    body: "",
-  });
-  if (!res.ok) throw new Error(`Clean HTTP ${res.status}`);
-  return res.json();
-}
-
-async function getLogs(limit: number, offset: number): Promise<CeloeapiSasEtlLogsResponse> {
-  const url = new URL(`${BASE_URL}/api/v1/celoeapi/sas/etl/logs`);
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("offset", String(offset));
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: AUTH_TOKEN,
-    },
-  });
-  if (!res.ok) throw new Error(`Logs HTTP ${res.status}`);
-  return res.json();
-}
-
-async function getExport(limit: number, offset: number): Promise<CeloeapiSasEtlExportResponse> {
-  const url = new URL(`${BASE_URL}/api/v1/celoeapi/sas/etl/export`);
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("offset", String(offset));
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization: AUTH_TOKEN,
-    },
-  });
-  if (!res.ok) throw new Error(`Export HTTP ${res.status}`);
-  return res.json();
-}
-
 function statusBadgeVariant(status: string | undefined) {
   const s = (status || "").toLowerCase();
   if (s === "completed" || s === "success") return "bg-green-100 text-green-800";
@@ -267,6 +198,10 @@ export default function EtlSasCeloeapiPage() {
   const [cleaning, setCleaning] = useState(false);
   const [lastRun, setLastRun] = useState<CeloeapiSasEtlRunResponse | null>(null);
   const [lastClean, setLastClean] = useState<CeloeapiSasEtlCleanResponse | null>(null);
+  
+  // ETL Run Parameters
+  const [startDate, setStartDate] = useState('2024-01-01');
+  const [concurrency, setConcurrency] = useState(4);
 
   // Logs
   const [logs, setLogs] = useState<CeloeapiSasEtlLogsResponse | null>(null);
@@ -340,7 +275,7 @@ export default function EtlSasCeloeapiPage() {
   async function onRun() {
     try {
       setRunning(true);
-      const res = await runEtl();
+      const res = await runEtl(startDate, concurrency);
       setLastRun(res);
       toast({ title: "ETL Started", description: res.message });
       await refreshStatus();
@@ -450,6 +385,46 @@ export default function EtlSasCeloeapiPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ETL Run Parameters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Play className="w-4 h-4 text-green-600" /> ETL Run Parameters
+          </CardTitle>
+          <CardDescription>Configure ETL execution parameters</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="start-date" className="text-sm font-medium text-gray-700">
+                Start Date
+              </label>
+              <input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="concurrency" className="text-sm font-medium text-gray-700">
+                Concurrency
+              </label>
+              <input
+                id="concurrency"
+                type="number"
+                min="1"
+                max="10"
+                value={concurrency}
+                onChange={(e) => setConcurrency(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
@@ -777,6 +752,65 @@ export default function EtlSasCeloeapiPage() {
       </Tabs>
     </div>
   );
+}
+
+async function getStatus(): Promise<CeloeapiSasEtlStatusResponse> {
+  const response = await apiClient.getWithCustomBase<CeloeapiSasEtlStatusResponse>(
+    API_CONFIG.BASE_URL,
+    API_ENDPOINTS.SAS.ETL_CELOEAPI.STATUS
+  );
+  return response;
+}
+
+async function runEtl(startDate: string, concurrency: number): Promise<CeloeapiSasEtlRunResponse> {
+  const requestBody = {
+    start_date: startDate,
+    concurrency: concurrency
+  };
+  
+  const response = await apiClient.postWithCustomBase<CeloeapiSasEtlRunResponse>(
+    API_CONFIG.BASE_URL,
+    API_ENDPOINTS.SAS.ETL_CELOEAPI.RUN,
+    requestBody
+  );
+  return response;
+}
+
+async function cleanEtl(): Promise<CeloeapiSasEtlCleanResponse> {
+  const response = await apiClient.postWithCustomBase<CeloeapiSasEtlCleanResponse>(
+    API_CONFIG.BASE_URL,
+    API_ENDPOINTS.SAS.ETL_CELOEAPI.CLEAN,
+    ""
+  );
+  return response;
+}
+
+async function getLogs(limit: number, offset: number): Promise<CeloeapiSasEtlLogsResponse> {
+  const queryParams = new URLSearchParams();
+  queryParams.set("limit", String(limit));
+  queryParams.set("offset", String(offset));
+  
+  const endpoint = `${API_ENDPOINTS.SAS.ETL_CELOEAPI.LOGS}?${queryParams.toString()}`;
+  
+  const response = await apiClient.getWithCustomBase<CeloeapiSasEtlLogsResponse>(
+    API_CONFIG.BASE_URL,
+    endpoint
+  );
+  return response;
+}
+
+async function getExport(limit: number, offset: number): Promise<CeloeapiSasEtlExportResponse> {
+  const queryParams = new URLSearchParams();
+  queryParams.set("limit", String(limit));
+  queryParams.set("offset", String(offset));
+  
+  const endpoint = `${API_ENDPOINTS.SAS.ETL_CELOEAPI.EXPORT}?${queryParams.toString()}`;
+  
+  const response = await apiClient.getWithCustomBase<CeloeapiSasEtlExportResponse>(
+    API_CONFIG.BASE_URL,
+    endpoint
+  );
+  return response;
 }
 
 function UsersIcon() {

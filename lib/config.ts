@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-  // Base URL for your API - actual Celoe API endpoint
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8888/celoeapi/index.php',
+  // Base URL for your API - all endpoints use localhost:3001
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001',
   
   // Default pagination settings
   DEFAULT_PAGE_SIZE: 10,
@@ -63,6 +63,13 @@ export const API_ENDPOINTS = {
       LOGS_REALTIME: '/api/v1/sas-etl/logs/{log}/realtime',
       CHART_FETCH: '/api/v1/sas/etl/fetch',
       CHART_CLEAR_STUCK: '/api/v1/sas/etl/clear-stuck',
+    },
+    ETL_CELOEAPI: {
+      STATUS: '/api/v1/celoeapi/sas/etl/status',
+      RUN: '/api/v1/celoeapi/sas/etl/run',
+      CLEAN: '/api/v1/celoeapi/sas/etl/clean',
+      LOGS: '/api/v1/celoeapi/sas/etl/logs',
+      EXPORT: '/api/v1/celoeapi/sas/etl/export',
     },
     FETCH: {
       SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/category-subject/run',
