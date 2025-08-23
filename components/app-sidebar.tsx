@@ -140,7 +140,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-primary-foreground">
                 <BookOpen className="h-5 w-5" strokeWidth={3} />
               </div>
-              <div className="flex flex-col flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+              <div className="flex flex-col flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden justify-center">
                 <span className="truncate font-semibold text-sm">MONEV</span>
                 <span className="truncate text-xs text-muted-foreground">
                   CeLOE Monitoring System
@@ -157,16 +157,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <SidebarMenu>
               {getNavItems().map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:my-3">
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
                     tooltip={item.title}
-                    className="flex items-center justify-start h-10"
+                    className="flex items-center justify-start h-10 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
                   >
-                    <Link href={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium">
+                    <Link href={item.url} className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+                      <div className="flex items-center justify-center h-9 w-9 rounded-md group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-hover:bg-sidebar-accent/50">
+                        <item.icon className="!h-6 !w-6 flex-shrink-0" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium leading-none">
                         {item.title}
                       </span>
                     </Link>
