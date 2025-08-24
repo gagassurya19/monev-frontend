@@ -58,7 +58,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
+              <BookOpen className="w-8 h-8 text-white" strokeWidth={3} />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">MONEV Dashboard</h1>
@@ -116,7 +116,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.filter(feature => !feature.adminOnly || (feature.adminOnly && user?.admin)).map((feature, index) => (
-            <Card key={index} className="group hover:shadow-md transition-all duration-200 border border-gray-200">
+            <Card key={index} className="group hover:shadow-md transition-all duration-200 border border-gray-200 h-full flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-3">
                   <feature.icon className={`w-8 h-8 ${feature.color}`} />
@@ -132,7 +132,7 @@ export default function Home() {
                 </p>
               </CardHeader>
               
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 mt-auto">
                 <Link href={feature.href}>
                   <Button 
                     variant={feature.adminOnly && !user?.admin ? "outline" : "default"}
