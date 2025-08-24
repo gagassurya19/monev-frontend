@@ -938,7 +938,7 @@ export default function ActivityDetailPage() {
                                             )}
                                         </button>
                                     </TableHead>
-                                    <TableHead className="px-2 sm:px-4 text-xs sm:text-sm">Performance</TableHead>
+                                    <TableHead className="px-2 sm:px-4 text-xs sm:text-sm">Status</TableHead>
                                     <TableHead className="text-right px-2 sm:px-4">
                                         <button
                                             onClick={() => handleSort("nilai")}
@@ -1008,20 +1008,16 @@ export default function ActivityDetailPage() {
                                             </TableCell>
                                             <TableCell className="p-2 sm:p-4">
                                                 <div className="space-y-1 text-xs">
-                                                    {activity.activity_type.toLowerCase() === 'quiz' && (
-                                                        <>
-                                                            {student.jumlah_dikerjakan && student.jumlah_soal && (
-                                                                <div className="flex items-center gap-1">
-                                                                    <Target className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                                                                    <span>
-                                                                        {student.jumlah_dikerjakan}/{student.jumlah_soal} soal
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                    {student.progress && (
-                                                        <div className="text-gray-500">{student.progress}</div>
+                                                    {student.durasi_pengerjaan ? (
+                                                        <Badge variant="outline" className="text-xs border-teal-200 text-teal-600 bg-teal-50">
+                                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                                            Submitted
+                                                    </Badge>
+                                                    ):(
+                                                        <Badge variant="outline" className="text-xs border-yellow-200 text-yellow-600 bg-yellow-50">
+                                                            <Eye className="w-3 h-3 mr-1" />
+                                                            View Activity
+                                                        </Badge>
                                                     )}
                                                 </div>
                                             </TableCell>
