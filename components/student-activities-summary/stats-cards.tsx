@@ -43,8 +43,6 @@ export function StatsCards({ params }: StatsCardsProps) {
 
   React.useEffect(() => {
     if (!params) return;
-    const allow = params.prodi_id || params.show_all === 'true';
-    if (!allow) return;
     setAppliedParams(params);
   }, [params]);
 
@@ -67,7 +65,7 @@ export function StatsCards({ params }: StatsCardsProps) {
     })();
   }, [appliedParams]);
 
-  if (!params || (!params.prodi_id && params.show_all !== 'true')) return null;
+  if (!params) return null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -125,7 +123,7 @@ export function StatsCards({ params }: StatsCardsProps) {
             <div>
               <p className="text-sm font-medium text-gray-600">Completion Rate</p>
               <p className="text-3xl font-bold text-gray-900">
-                {data ? Math.round((data.completion_rate || 0) * 100) : (loading ? '…' : 0)}%
+                {data?.completion_rate ?? (loading ? '…' : 0)}%
               </p>
             </div>
             <div className="h-16 w-16 bg-orange-100 rounded-lg flex items-center justify-center">

@@ -1,28 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis
-} from "@/components/ui/pagination";
-import { RefreshCw, Plus, X, Filter, GraduationCap, Building2, BookOpen, Book, ChevronDown, ChevronRight, BarChart3, TrendingUp, Sparkles, Users, School, Search, FileText, Video, MessageSquare, HelpCircle, Globe, Calculator, Clock } from "lucide-react";
-import { ActivityChart, generateSampleData } from "@/components/activity-chart";
+import { Card, CardContent } from "@/components/ui/card";
+import { RefreshCw, Plus, X, Filter, GraduationCap, Building2, BookOpen, Book, ChevronRight, Clock } from "lucide-react";
 import { ChartSection, StatsCards, SummaryTable, DistributionPie } from "@/components/student-activities-summary";
 import ClientDate from "@/components/ClientDate";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { FilterDropdown } from "@/components/filter-dropdown";
 import { getETLSASStatus } from "@/lib/api/activity";
 
@@ -38,28 +24,6 @@ interface AppliedFilters {
   mataKuliah: string;
   mataKuliahId: string;
   mataKuliahName: string;
-}
-
-interface CourseData {
-  id: number;
-  site: string;
-  fakultas: string;
-  program_studi: string;
-  id_course: number;
-  id_number: string;
-  num_teacher: number;
-  num_student: number;
-  subject_code: string;
-  subject_name: string;
-  class: string;
-  file: number;
-  video: number;
-  forum: number;
-  quiz: number;
-  assignment: number;
-  url: number;
-  sum: number;
-  avg_activity_per_student_per_day: number;
 }
 
 interface ETLStatus {
@@ -79,14 +43,14 @@ interface ETLStatus {
 }
 
 export default function StudentActivitesSummaryPage() {
-  const [selectedUniversity, setSelectedUniversity] = useState("TEL-U BANDUNG");
+  const [selectedUniversity, setSelectedUniversity] = useState("Semua Kampus");
   const [selectedFakultas, setSelectedFakultas] = useState("");
   const [selectedProdi, setSelectedProdi] = useState("");
   const [selectedMataKuliah, setSelectedMataKuliah] = useState("");
   const [currentLevel, setCurrentLevel] = useState(1); // 1=kampus, 2=fakultas, 3=prodi, 4=mata kuliah
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>({
-    university: "TEL-U BANDUNG",
-    universityCode: "bdg",
+    university: "",
+    universityCode: "",
     fakultas: "",
     fakultasId: "",
     fakultasName: "",
@@ -104,31 +68,19 @@ export default function StudentActivitesSummaryPage() {
   const [selectedMataKuliahId, setSelectedMataKuliahId] = useState("");
 
   // Table state
-  const [courseData, setCourseData] = useState<CourseData[]>([]);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("subject_name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [hasApplied, setHasApplied] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-  const canFetch = hasApplied && (!!appliedFilters.prodiId || showAll);
+  const canFetch = hasApplied;
 
   // ETL status state
   const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
-  const [etlLoading, setEtlLoading] = useState(false);
 
   // Fetch ETL Status
   const fetchETLStatus = async () => {
     try {
-      setEtlLoading(true)
       const data = await getETLSASStatus()
       setEtlStatus(data)
     } catch (error) {
       console.error('Error fetching ETL status:', error)
-    } finally {
-      setEtlLoading(false)
     }
   }
 
@@ -138,6 +90,7 @@ export default function StudentActivitesSummaryPage() {
   }, [])
 
   // Load filters from localStorage on component mount (do not auto-apply)
+  // IMPORTANT: This only loads UI state, does NOT trigger any API calls
   useEffect(() => {
     const savedFilters = localStorage.getItem('analytics-filters');
     if (savedFilters) {
@@ -156,6 +109,9 @@ export default function StudentActivitesSummaryPage() {
         else if (parsed.prodi) setCurrentLevel(3);
         else if (parsed.fakultas) setCurrentLevel(2);
         else setCurrentLevel(1);
+        
+        // NOTE: hasApplied remains false, so no API calls will be made
+        // User must click Apply button to trigger data fetching
       } catch (error) {
         console.error('Error loading filters from localStorage:', error);
       }
@@ -163,6 +119,7 @@ export default function StudentActivitesSummaryPage() {
   }, []);
 
   const universities = [
+    "Semua Kampus",
     "TEL-U BANDUNG",
     "TEL-U SURABAYA",
     "TEL-U JAKARTA",
@@ -172,11 +129,12 @@ export default function StudentActivitesSummaryPage() {
   // Get kampus code for API
   const getKampusCode = (university: string) => {
     switch (university) {
+      case "Semua Kampus": return "";
       case "TEL-U BANDUNG": return "bdg";
       case "TEL-U SURABAYA": return "sby";
       case "TEL-U JAKARTA": return "jkt";
       case "TEL-U PURWOKERTO": return "pwt";
-      default: return "bdg";
+      default: return "";
     }
   };
 
@@ -221,24 +179,6 @@ export default function StudentActivitesSummaryPage() {
     setSelectedMataKuliah("");
     setSelectedMataKuliahId("");
     setCurrentLevel(1);
-
-    // Auto-apply the university filter
-    const newFilters = {
-      university: value,
-      universityCode: getKampusCode(value),
-      fakultas: "",
-      fakultasId: "",
-      fakultasName: "",
-      prodi: "",
-      prodiId: "",
-      prodiName: "",
-      mataKuliah: "",
-      mataKuliahId: "",
-      mataKuliahName: ""
-    };
-
-    setAppliedFilters(newFilters);
-    localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
   const handleFakultasChange = (value: string, displayName?: string) => {
@@ -250,24 +190,6 @@ export default function StudentActivitesSummaryPage() {
     setSelectedMataKuliah("");
     setSelectedMataKuliahId("");
     setCurrentLevel(2);
-
-    // Auto-apply the filters up to fakultas level
-    const newFilters = {
-      university: selectedUniversity,
-      universityCode: getKampusCode(selectedUniversity),
-      fakultas: displayName || value,
-      fakultasId: value,
-      fakultasName: displayName || value,
-      prodi: "",
-      prodiId: "",
-      prodiName: "",
-      mataKuliah: "",
-      mataKuliahId: "",
-      mataKuliahName: ""
-    };
-
-    setAppliedFilters(newFilters);
-    localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
   const handleProdiChange = (value: string, displayName?: string) => {
@@ -277,63 +199,20 @@ export default function StudentActivitesSummaryPage() {
     setSelectedMataKuliah("");
     setSelectedMataKuliahId("");
     setCurrentLevel(3);
-
-    // Auto-apply the filters up to prodi level
-    const newFilters = {
-      university: selectedUniversity,
-      universityCode: getKampusCode(selectedUniversity),
-      fakultas: selectedFakultas,
-      fakultasId: selectedFakultasId,
-      fakultasName: selectedFakultas,
-      prodi: displayName || value,
-      prodiId: value,
-      prodiName: displayName || value,
-      mataKuliah: "",
-      mataKuliahId: "",
-      mataKuliahName: ""
-    };
-
-    setAppliedFilters(newFilters);
-    localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
   const handleMataKuliahChange = (value: string, displayName?: string) => {
     setSelectedMataKuliahId(value);
     setSelectedMataKuliah(displayName || value);
     setCurrentLevel(4);
-
-    // Auto-apply all filters including mata kuliah
-    const newFilters = {
-      university: selectedUniversity,
-      universityCode: getKampusCode(selectedUniversity),
-      fakultas: selectedFakultas,
-      fakultasId: selectedFakultasId,
-      fakultasName: selectedFakultas,
-      prodi: selectedProdi,
-      prodiId: selectedProdiId,
-      prodiName: selectedProdi,
-      mataKuliah: displayName || value,
-      mataKuliahId: value,
-      mataKuliahName: displayName || value
-    };
-
-    setAppliedFilters(newFilters);
-    localStorage.setItem('analytics-filters', JSON.stringify(newFilters));
   };
 
   const handleRefresh = () => {
     console.log("Refresh button clicked");
     // Refresh ETL status and data
     fetchETLStatus();
-    
-    // Regenerate course data
-    const data = generateCourseData();
-    setCourseData(data);
-    setCurrentPage(1);
   };
 
-  // Since filters are now auto-applied, we don't need manual apply
-  // But we keep this for backwards compatibility if needed
   const handleApplyFilter = () => {
     const newFilters = {
       university: selectedUniversity,
@@ -360,12 +239,8 @@ export default function StudentActivitesSummaryPage() {
     return appliedFilters.fakultas || appliedFilters.prodi || appliedFilters.mataKuliah;
   };
 
-  const hasAdditionalFilters = () => {
-    return selectedFakultas || selectedProdi || selectedMataKuliah;
-  };
-
   const clearAllFilters = () => {
-    setSelectedUniversity("TEL-U BANDUNG");
+    setSelectedUniversity("Semua Kampus");
     setSelectedFakultas("");
     setSelectedFakultasId("");
     setSelectedProdi("");
@@ -374,10 +249,10 @@ export default function StudentActivitesSummaryPage() {
     setSelectedMataKuliahId("");
     setCurrentLevel(1);
 
-    // When clearing all filters, automatically apply the default kampus filter
+    // When clearing all filters, reset to empty state
     const clearedFilters = {
-      university: "TEL-U BANDUNG",
-      universityCode: "bdg",
+      university: "",
+      universityCode: "",
       fakultas: "",
       fakultasId: "",
       fakultasName: "",
@@ -397,239 +272,12 @@ export default function StudentActivitesSummaryPage() {
   // Generate chart subtitle based on applied filters
   const getChartSubtitle = () => {
     const parts = [];
-    if (appliedFilters.university) parts.push(appliedFilters.university);
+    if (appliedFilters.university && appliedFilters.university !== "Semua Kampus" && appliedFilters.university !== "") parts.push(appliedFilters.university);
     if (appliedFilters.fakultas) parts.push(appliedFilters.fakultas);
     if (appliedFilters.prodi) parts.push(appliedFilters.prodi);
     if (appliedFilters.mataKuliah) parts.push(appliedFilters.mataKuliah);
     
-    return parts.length > 1 ? parts.slice(1).join(' > ') : '';
-  };
-
-  // Generate sample course data
-  const generateCourseData = (): CourseData[] => {
-    const sampleData: CourseData[] = [
-      {
-        id: 1,
-        site: "TEL-U BANDUNG",
-        fakultas: "Fakultas Informatika",
-        program_studi: "Teknik Informatika",
-        id_course: 12345,
-        id_number: "TIF001",
-        num_teacher: 3,
-        num_student: 45,
-        subject_code: "IF101",
-        subject_name: "Algoritma Pemrograman",
-        class: "TIF-A",
-        file: 12,
-        video: 8,
-        forum: 5,
-        quiz: 4,
-        assignment: 6,
-        url: 3,
-        sum: 38,
-        avg_activity_per_student_per_day: 2.1
-      },
-      {
-        id: 2,
-        site: "TEL-U BANDUNG",
-        fakultas: "Fakultas Informatika",
-        program_studi: "Sistem Informasi",
-        id_course: 12346,
-        id_number: "SI001",
-        num_teacher: 2,
-        num_student: 38,
-        subject_code: "SI201",
-        subject_name: "Basis Data",
-        class: "SI-B",
-        file: 15,
-        video: 10,
-        forum: 7,
-        quiz: 6,
-        assignment: 8,
-        url: 4,
-        sum: 50,
-        avg_activity_per_student_per_day: 3.2
-      },
-      {
-        id: 3,
-        site: "TEL-U SURABAYA",
-        fakultas: "Fakultas Teknik Industri",
-        program_studi: "Teknik Industri",
-        id_course: 12347,
-        id_number: "TI001",
-        num_teacher: 4,
-        num_student: 52,
-        subject_code: "TI301",
-        subject_name: "Sistem Produksi",
-        class: "TI-A",
-        file: 8,
-        video: 12,
-        forum: 3,
-        quiz: 5,
-        assignment: 7,
-        url: 2,
-        sum: 37,
-        avg_activity_per_student_per_day: 1.8
-      },
-      {
-        id: 4,
-        site: "TEL-U JAKARTA",
-        fakultas: "Fakultas Komunikasi",
-        program_studi: "Ilmu Komunikasi",
-        id_course: 12348,
-        id_number: "IK001",
-        num_teacher: 2,
-        num_student: 41,
-        subject_code: "IK101",
-        subject_name: "Teori Komunikasi",
-        class: "IK-C",
-        file: 10,
-        video: 6,
-        forum: 8,
-        quiz: 3,
-        assignment: 5,
-        url: 6,
-        sum: 38,
-        avg_activity_per_student_per_day: 2.4
-      },
-      {
-        id: 5,
-        site: "TEL-U PURWOKERTO",
-        fakultas: "Fakultas Engineering",
-        program_studi: "Software Engineering",
-        id_course: 12349,
-        id_number: "SE001",
-        num_teacher: 3,
-        num_student: 35,
-        subject_code: "SE201",
-        subject_name: "Software Design",
-        class: "SE-A",
-        file: 14,
-        video: 9,
-        forum: 4,
-        quiz: 7,
-        assignment: 9,
-        url: 3,
-        sum: 46,
-        avg_activity_per_student_per_day: 2.8
-      }
-    ];
-
-    // Generate more data based on filters
-    const baseData = [...sampleData];
-    for (let i = 0; i < 15; i++) {
-      const base = sampleData[i % sampleData.length];
-      baseData.push({
-        ...base,
-        id: base.id + (i + 1) * 10,
-        id_course: base.id_course + (i + 1) * 100,
-        id_number: `${base.id_number}_${i + 1}`,
-        class: `${base.class}-${String.fromCharCode(65 + (i % 4))}`,
-        num_student: base.num_student + Math.floor(Math.random() * 20) - 10,
-        file: Math.floor(Math.random() * 20) + 5,
-        video: Math.floor(Math.random() * 15) + 3,
-        forum: Math.floor(Math.random() * 10) + 2,
-        quiz: Math.floor(Math.random() * 8) + 2,
-        assignment: Math.floor(Math.random() * 12) + 3,
-        url: Math.floor(Math.random() * 8) + 1,
-        sum: 0,
-        avg_activity_per_student_per_day: Math.random() * 3 + 1
-      });
-      // Calculate sum
-      const lastItem = baseData[baseData.length - 1];
-      lastItem.sum = lastItem.file + lastItem.video + lastItem.forum + lastItem.quiz + lastItem.assignment + lastItem.url;
-    }
-
-    return baseData;
-  };
-
-  // Load course data when filters change
-  useEffect(() => {
-    const data = generateCourseData();
-    setCourseData(data);
-    setCurrentPage(1); // Reset to first page when data changes
-  }, [appliedFilters]);
-
-  // Filter and sort data
-  const filteredAndSortedData = React.useMemo(() => {
-    let filtered = courseData;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.program_studi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.fakultas.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.class.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply sorting
-    filtered = [...filtered].sort((a, b) => {
-      const aValue = a[sortBy as keyof CourseData];
-      const bValue = b[sortBy as keyof CourseData];
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-      
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      
-      return 0;
-    });
-
-    return filtered;
-  }, [courseData, searchTerm, sortBy, sortOrder]);
-
-  // Pagination calculations
-  const totalItems = filteredAndSortedData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredAndSortedData.slice(startIndex, endIndex);
-
-  // Search handlers
-  const executeSearch = useCallback(() => {
-    setSearchTerm(searchInput);
-    setCurrentPage(1);
-  }, [searchInput]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      executeSearch();
-    }
-  }, [executeSearch]);
-
-  const clearSearch = useCallback(() => {
-    setSearchInput("");
-    setSearchTerm("");
-    setCurrentPage(1);
-  }, []);
-
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleItemsPerPageChange = (items: number) => {
-    setItemsPerPage(items);
-    setCurrentPage(1);
-  };
-
-  // Sorting handler
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-    setCurrentPage(1);
+    return parts.length > 0 ? parts.join(' > ') : '';
   };
 
   return (
@@ -668,7 +316,7 @@ export default function StudentActivitesSummaryPage() {
               </p> */}
             </div>
             <div className="flex items-center gap-2">
-            {(hasAdditionalFiltersApplied() || showAll) && (
+            {hasAdditionalFiltersApplied() && (
               <Button
                 variant="outline"
                 size="sm"
@@ -679,10 +327,7 @@ export default function StudentActivitesSummaryPage() {
                 Clear All
               </Button>
             )}
-            <div className="flex items-center gap-2 mr-2">
-              <label className="text-sm text-gray-700">Tampilkan semua</label>
-              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
-            </div>
+
             <Button
                 variant="default"
                 size="sm"
@@ -860,7 +505,7 @@ export default function StudentActivitesSummaryPage() {
               <CardContent className="py-10 text-center">
                 <Filter className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">Filter diperlukan</h3>
-                <p className="text-sm text-gray-600">Silakan pilih minimal <span className="font-semibold">Program Studi (Prodi)</span> lalu klik Apply untuk memuat data.</p>
+                <p className="text-sm text-gray-600">Silakan pilih filter yang diinginkan lalu klik <span className="font-semibold">Apply</span> untuk memuat data.</p>
               </CardContent>
             </Card>
           </div>
@@ -869,22 +514,22 @@ export default function StudentActivitesSummaryPage() {
             {/* Chart Section (API-driven) */}
             <div className="mb-8">
               <ChartSection
-                title={appliedFilters.university}
+                title={appliedFilters.university === "Semua Kampus" ? "Semua Kampus TEL-U" : appliedFilters.university || "Semua Kampus TEL-U"}
                 subtitle={getChartSubtitle()}
-                params={showAll ? {
-                  show_all: 'true',
-                } : {
-                  university: appliedFilters.university,
-                  fakultas_id: appliedFilters.fakultasId || undefined,
-                  prodi_id: appliedFilters.prodiId || undefined,
-                  subject_ids: appliedFilters.mataKuliahId || undefined,
+                params={{
+                  ...(appliedFilters.universityCode && { university: appliedFilters.universityCode }),
+                  ...(appliedFilters.fakultasId && { fakultas_id: appliedFilters.fakultasId }),
+                  ...(appliedFilters.prodiId && { prodi_id: appliedFilters.prodiId }),
+                  ...(appliedFilters.mataKuliahId && { subject_ids: appliedFilters.mataKuliahId }),
                   group_by: appliedFilters.mataKuliahId
                     ? 'subject'
                     : appliedFilters.prodiId
                     ? 'subject'
                     : appliedFilters.fakultasId
                     ? 'prodi'
-                    : 'fakultas',
+                    : appliedFilters.universityCode
+                    ? 'fakultas'
+                    : 'kampus',
                 }}
                 className="shadow-lg"
               />
@@ -894,13 +539,11 @@ export default function StudentActivitesSummaryPage() {
             <div className="flex flex-col lg:flex-row gap-6 mb-8">
               {/* Left Side - Stats Cards (API-driven) */}
               <div className="lg:w-1/2">
-                <StatsCards params={showAll ? {
-                  show_all: 'true',
-                } : {
-                  university: appliedFilters.university,
-                  fakultas_id: appliedFilters.fakultasId || undefined,
-                  prodi_id: appliedFilters.prodiId || undefined,
-                  subject_ids: appliedFilters.mataKuliahId || undefined,
+                <StatsCards params={{
+                  ...(appliedFilters.universityCode && { university: appliedFilters.universityCode }),
+                  ...(appliedFilters.fakultasId && { fakultas_id: appliedFilters.fakultasId }),
+                  ...(appliedFilters.prodiId && { prodi_id: appliedFilters.prodiId }),
+                  ...(appliedFilters.mataKuliahId && { subject_ids: appliedFilters.mataKuliahId }),
                 }} />
               </div>
 
@@ -911,11 +554,11 @@ export default function StudentActivitesSummaryPage() {
                     <h3 className="text-lg font-semibold text-gray-800">Activity Distribution</h3>
                     <p className="text-sm text-gray-600">Breakdown by activity type</p>
                   </div>
-                  <DistributionPie params={showAll ? { show_all: 'true' } : {
-                    university: appliedFilters.university,
-                    fakultas_id: appliedFilters.fakultasId || undefined,
-                    prodi_id: appliedFilters.prodiId || undefined,
-                    subject_ids: appliedFilters.mataKuliahId || undefined,
+                  <DistributionPie params={{
+                    ...(appliedFilters.universityCode && { university: appliedFilters.universityCode }),
+                    ...(appliedFilters.fakultasId && { fakultas_id: appliedFilters.fakultasId }),
+                    ...(appliedFilters.prodiId && { prodi_id: appliedFilters.prodiId }),
+                    ...(appliedFilters.mataKuliahId && { subject_ids: appliedFilters.mataKuliahId }),
                   }} />
                 </div>
               </div>
@@ -924,491 +567,15 @@ export default function StudentActivitesSummaryPage() {
             {/* Course Data Table (API-driven) */}
             <Card>
               <CardContent className="p-0">
-                <SummaryTable params={showAll ? {
-                  show_all: 'true',
-                } : {
-                  university: appliedFilters.university,
-                  fakultas_id: appliedFilters.fakultasId || '',
-                  prodi_id: appliedFilters.prodiId || '',
-                  subject_ids: appliedFilters.mataKuliahId || '',
+                <SummaryTable params={{
+                  ...(appliedFilters.universityCode && { university: appliedFilters.universityCode }),
+                  ...(appliedFilters.fakultasId && { fakultas_id: appliedFilters.fakultasId }),
+                  ...(appliedFilters.prodiId && { prodi_id: appliedFilters.prodiId }),
+                  ...(appliedFilters.mataKuliahId && { subject_ids: appliedFilters.mataKuliahId }),
                 }} />
               </CardContent>
             </Card>
           </>
-        )}
-
-        {/* Course Data Table (disabled) */}
-        {false && (
-        <Card>
-          <CardHeader className="bg-teal-700 text-white">
-            {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">Course Analytics Data</h3>
-                <p className="text-sm text-teal-100 mt-1">
-                  Detailed analytics for all courses and activities
-                </p>
-              </div>
-            </div> */}
-            
-            {/* Search Bar */}
-            <div className="pt-3">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Cari mata kuliah, kode, program studi, atau kelas..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="pl-10 pr-10 bg-white text-gray-900 focus-visible:ring-0 h-10"
-                  />
-                  {(searchInput || searchTerm) && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors"
-                      type="button"
-                      aria-label="Clear search"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  onClick={executeSearch}
-                  className="bg-white text-teal-700 hover:bg-teal-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4 flex-shrink-0"
-                  size="default"
-                >
-                  <Search className="w-4 h-4 sm:mr-2" strokeWidth={3} />
-                  <span className="hidden sm:inline">Cari</span>
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table className="w-full table-auto">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-center px-2 sm:px-4 w-16">No</TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[120px]">
-                      <button
-                        onClick={() => handleSort("site")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
-                      >
-                        Site
-                        {sortBy === "site" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[140px]">
-                      <button
-                        onClick={() => handleSort("fakultas")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
-                      >
-                        Fakultas
-                        {sortBy === "fakultas" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[140px]">
-                      <button
-                        onClick={() => handleSort("program_studi")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
-                      >
-                        Program Studi
-                        {sortBy === "program_studi" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    {/* <TableHead className="px-2 sm:px-4 min-w-[100px]">
-                      <button
-                        onClick={() => handleSort("id_course")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
-                      >
-                        ID Course
-                        {sortBy === "id_course" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[100px]">ID Number</TableHead> */}
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[80px]">
-                      <button
-                        onClick={() => handleSort("num_teacher")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm mx-auto"
-                      >
-                        Teachers
-                        {sortBy === "num_teacher" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[80px]">
-                      <button
-                        onClick={() => handleSort("num_student")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm mx-auto"
-                      >
-                        Students
-                        {sortBy === "num_student" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    {/* <TableHead className="px-2 sm:px-4 min-w-[100px]">Subject Code</TableHead>
-                    <TableHead className="px-2 sm:px-4 min-w-[140px]">
-                      <button
-                        onClick={() => handleSort("subject_name")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm"
-                      >
-                        Subject Name
-                        {sortBy === "subject_name" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead> */}
-                    {/* <TableHead className="px-2 sm:px-4 min-w-[80px]">Class</TableHead> */}
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <div title="File">
-                        <FileText className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <div title="Video">
-                        <Video className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <div title="Forum">
-                        <MessageSquare className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <div title="Quiz">
-                        <HelpCircle className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[80px]">
-                      <div title="Assignment">
-                        <BookOpen className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <div title="URL">
-                        <Globe className="w-4 h-4 mx-auto" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[60px]">
-                      <button
-                        onClick={() => handleSort("sum")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm mx-auto"
-                      >
-                        Sum
-                        {sortBy === "sum" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                    <TableHead className="px-2 sm:px-4 text-center min-w-[100px]">
-                      <button
-                        onClick={() => handleSort("avg_activity_per_student_per_day")}
-                        className="flex items-center gap-1 hover:text-gray-300 transition-colors text-xs sm:text-sm mx-auto"
-                      >
-                        <Calculator className="w-4 h-4 mr-1" />
-                        AVG/Day
-                        {sortBy === "avg_activity_per_student_per_day" && (
-                          <span className="text-xs">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={18} className="text-center py-8">
-                        <div className="text-gray-500">
-                          <BookOpen className="w-8 h-8 mx-auto mb-2" />
-                          <p className="font-medium">Tidak ada data course</p>
-                          <p className="text-sm">Tidak ada data yang sesuai dengan filter yang dipilih</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentData.map((course, index) => (
-                      <TableRow key={course.id} className="hover:bg-gray-50">
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <div className="font-medium text-xs sm:text-sm text-gray-600">
-                            {startIndex + index + 1}
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <Badge variant="outline" className="text-xs">
-                            {course.site}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <div className="text-xs sm:text-sm font-medium text-gray-900">
-                            {course.fakultas}
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <div className="text-xs sm:text-sm text-blue-600">
-                            {course.program_studi}
-                          </div>
-                        </TableCell>
-                        {/* <TableCell className="p-2 sm:p-4">
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                            {course.id_course}
-                          </code>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                            {course.id_number}
-                          </code>
-                        </TableCell> */}
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <Badge variant="secondary" className="text-xs">
-                            {course.num_teacher}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <Badge variant="secondary" className="text-xs">
-                            {course.num_student}
-                          </Badge>
-                        </TableCell>
-                        {/* <TableCell className="p-2 sm:p-4">
-                          <code className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                            {course.subject_code}
-                          </code>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <div className="text-xs sm:text-sm font-medium text-gray-900 max-w-[140px] truncate" title={course.subject_name}>
-                            {course.subject_name}
-                          </div>
-                        </TableCell> */}
-                        {/* <TableCell className="p-2 sm:p-4">
-                          <Badge variant="outline" className="text-xs">
-                            {course.class}
-                          </Badge>
-                        </TableCell> */}
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.file}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.video}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.forum}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.quiz}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.assignment}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium">{course.url}</span>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <Badge 
-                            variant={course.sum > 40 ? "default" : course.sum > 30 ? "secondary" : "destructive"} 
-                            className="text-xs"
-                          >
-                            {course.sum}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4 text-center">
-                          <span className="text-xs sm:text-sm font-medium text-green-600">
-                            {course.avg_activity_per_student_per_day.toFixed(1)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="p-4 border-t">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Items per page selector */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-700">Tampilkan:</span>
-                  <Select
-                    value={itemsPerPage.toString()}
-                    onValueChange={(value) => handleItemsPerPageChange(Number(value))}
-                  >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-gray-700">
-                    <span className="hidden sm:inline">per halaman</span>
-                    <span className="sm:hidden">/hal</span>
-                  </span>
-                </div>
-
-                {/* Pagination info */}
-                <div className="text-sm text-gray-700 text-center">
-                  <span className="hidden sm:inline">
-                    Menampilkan {startIndex + 1} - {Math.min(endIndex, totalItems)} dari {totalItems} course
-                  </span>
-                  <span className="sm:hidden">
-                    {startIndex + 1}-{Math.min(endIndex, totalItems)} dari {totalItems}
-                  </span>
-                </div>
-
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                  <Pagination>
-                    <PaginationContent className="flex-wrap gap-1">
-                      <PaginationItem>
-                        <PaginationPrevious
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            if (currentPage > 1) handlePageChange(currentPage - 1)
-                          }}
-                          className={`${currentPage <= 1 ? "pointer-events-none opacity-50" : ""} text-xs sm:text-sm px-2 sm:px-3`}
-                        />
-                      </PaginationItem>
-
-                      {/* First page */}
-                      {currentPage > 2 && (
-                        <>
-                          <PaginationItem className="hidden sm:block">
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                handlePageChange(1)
-                              }}
-                              className="text-xs sm:text-sm px-2 sm:px-3"
-                            >
-                              1
-                            </PaginationLink>
-                          </PaginationItem>
-                          {currentPage > 3 && (
-                            <PaginationItem className="hidden sm:block">
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          )}
-                        </>
-                      )}
-
-                      {/* Previous page */}
-                      {currentPage > 1 && (
-                        <PaginationItem className="hidden sm:block">
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handlePageChange(currentPage - 1)
-                            }}
-                            className="text-xs sm:text-sm px-2 sm:px-3"
-                          >
-                            {currentPage - 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      {/* Current page */}
-                      <PaginationItem>
-                        <PaginationLink
-                          href="#"
-                          isActive
-                          onClick={(e) => e.preventDefault()}
-                          className="text-xs sm:text-sm px-2 sm:px-3"
-                        >
-                          {currentPage}
-                        </PaginationLink>
-                      </PaginationItem>
-
-                      {/* Next page */}
-                      {currentPage < totalPages && (
-                        <PaginationItem className="hidden sm:block">
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handlePageChange(currentPage + 1)
-                            }}
-                            className="text-xs sm:text-sm px-2 sm:px-3"
-                          >
-                            {currentPage + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      {/* Last page */}
-                      {currentPage < totalPages - 1 && (
-                        <>
-                          {currentPage < totalPages - 2 && (
-                            <PaginationItem className="hidden sm:block">
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          )}
-                          <PaginationItem className="hidden sm:block">
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                handlePageChange(totalPages)
-                              }}
-                              className="text-xs sm:text-sm px-2 sm:px-3"
-                            >
-                              {totalPages}
-                            </PaginationLink>
-                          </PaginationItem>
-                        </>
-                      )}
-
-                      <PaginationItem>
-                        <PaginationNext
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            if (currentPage < totalPages) handlePageChange(currentPage + 1)
-                          }}
-                          className={`${currentPage >= totalPages ? "pointer-events-none opacity-50" : ""} text-xs sm:text-sm px-2 sm:px-3`}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         )}
       </main>
     </div>

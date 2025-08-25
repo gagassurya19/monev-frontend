@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { API_ENDPOINTS } from "@/lib/config";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type SummaryRow = {
   id: number
@@ -47,8 +48,9 @@ export type SummaryTableProps = {
 export function SummaryTable({ params }: SummaryTableProps) {
   const [rows, setRows] = React.useState<SummaryRow[]>([])
   const [page, setPage] = React.useState(1)
-  const [limit] = React.useState(10)
+  const [limit, setLimit] = React.useState(10)
   const [totalPages, setTotalPages] = React.useState(1)
+  const [totalItems, setTotalItems] = React.useState(0)
   const [sortBy, setSortBy] = React.useState('sum')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [loading, setLoading] = React.useState(false)
@@ -88,9 +90,17 @@ export function SummaryTable({ params }: SummaryTableProps) {
       const json: TableApiResponse = await apiClient.get(API_ENDPOINTS.SAS.SUMMARY.TABLE, queryParams);
       setRows(json.data)
       setTotalPages(json.pagination.total_pages)
+      setTotalItems(json.pagination.total_items)
+      if (json.pagination.items_per_page && json.pagination.items_per_page !== limit) {
+        setLimit(json.pagination.items_per_page)
+      }
+      if (json.pagination.current_page && json.pagination.current_page !== page) {
+        setPage(json.pagination.current_page)
+      }
     } catch {
       setRows([])
       setTotalPages(1)
+      setTotalItems(0)
     } finally {
       setLoading(false)
     }
@@ -98,8 +108,6 @@ export function SummaryTable({ params }: SummaryTableProps) {
 
   React.useEffect(() => {
     if (!params) return;
-    const allow = params.prodi_id || params.show_all === 'true'
-    if (!allow) return;
     setAppliedParams(params)
   }, [params])
 
@@ -140,7 +148,9 @@ export function SummaryTable({ params }: SummaryTableProps) {
   //   return () => clearTimeout(timeoutId)
   // }, [searchInput, searchTerm])
 
-  const prodiMissing = !params || (!params.prodi_id && params.show_all !== 'true');
+  const prodiMissing = false;
+  const startIndex = (page - 1) * limit
+  const endIndex = Math.min(startIndex + rows.length, totalItems || startIndex + rows.length)
 
   return (
     <div>
@@ -234,28 +244,58 @@ export function SummaryTable({ params }: SummaryTableProps) {
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={() => setPage(Math.max(1, page - 1))} className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-              </PaginationItem>
-              {[...Array(Math.min(3, totalPages))].map((_, i) => {
-                const p = Math.min(Math.max(1, page - 1), Math.max(1, totalPages - 2)) + i
-                return (
-                  <PaginationItem key={p}>
-                    <PaginationLink onClick={() => setPage(p)} isActive={page === p} className="cursor-pointer">{p}</PaginationLink>
-                  </PaginationItem>
-                )
-              })}
-              <PaginationItem>
-                <PaginationNext onClick={() => setPage(Math.min(totalPages, page + 1))} className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+      <div className="p-4 border-t mt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-700">Tampilkan:</span>
+            <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-700">
+              <span className="hidden sm:inline">per halaman</span>
+              <span className="sm:hidden">/hal</span>
+            </span>
+          </div>
+
+          <div className="text-sm text-gray-700 text-center">
+            <span className="hidden sm:inline">
+              Menampilkan {totalItems ? startIndex + 1 : rows.length === 0 ? 0 : startIndex + 1} - {totalItems ? endIndex : startIndex + rows.length} dari {totalItems || rows.length} course
+            </span>
+            <span className="sm:hidden">
+              {totalItems ? startIndex + 1 : rows.length === 0 ? 0 : startIndex + 1}-{totalItems ? endIndex : startIndex + rows.length} dari {totalItems || rows.length}
+            </span>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent className="flex-wrap gap-1">
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => setPage(Math.max(1, page - 1))} className={`${page <= 1 ? 'pointer-events-none opacity-50' : ''} text-xs sm:text-sm px-2 sm:px-3 cursor-pointer`} />
+                </PaginationItem>
+                {[...Array(Math.min(3, totalPages))].map((_, i) => {
+                  const p = Math.min(Math.max(1, page - 1), Math.max(1, totalPages - 2)) + i
+                  return (
+                    <PaginationItem key={p} className="hidden sm:block">
+                      <PaginationLink onClick={() => setPage(p)} isActive={page === p} className="text-xs sm:text-sm px-2 sm:px-3 cursor-pointer">{p}</PaginationLink>
+                    </PaginationItem>
+                  )
+                })}
+                <PaginationItem>
+                  <PaginationNext onClick={() => setPage(Math.min(totalPages, page + 1))} className={`${page >= totalPages ? 'pointer-events-none opacity-50' : ''} text-xs sm:text-sm px-2 sm:px-3 cursor-pointer`} />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

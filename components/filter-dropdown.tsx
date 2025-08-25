@@ -76,15 +76,11 @@ export function FilterDropdown({
     }
   }, [type, disabled, fakultasId, prodiId, kampus]);
 
-  // Initial load
-  useEffect(() => {
-    if (!disabled) {
-      fetchItems('', 1, false);
-    }
-  }, [fetchItems, disabled]);
+  // Lazy load: fetch only when dropdown is opened (handled in onOpenChange)
 
-  // Handle search with debounce
+  // Handle search with debounce (only when open)
   useEffect(() => {
+    if (!isOpen) return;
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
@@ -98,7 +94,7 @@ export function FilterDropdown({
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [searchTerm, fetchItems]);
+  }, [searchTerm, isOpen]);
 
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
@@ -136,11 +132,17 @@ export function FilterDropdown({
         onValueChange={handleSelect}
         disabled={disabled}
         open={isOpen}
-        onOpenChange={setIsOpen}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          // IMPORTANT: Only fetch when dropdown is actually opened by user
+          // This prevents any automatic fetching when component mounts or filters change
+          if (open && items.length === 0 && !loading && !disabled) {
+            fetchItems('', 1, false);
+          }
+        }}
       >
         <SelectTrigger className="w-auto min-w-[140px] border-gray-300 shadow-sm text-sm font-medium text-gray-700 focus:ring-red-500 focus:border-red-500">
           <SelectValue placeholder={placeholder} />
-          <ChevronDown className="h-4 w-4 opacity-50" />
         </SelectTrigger>
         <SelectContent className="w-[300px] p-0">
           <div className="p-2 border-b">

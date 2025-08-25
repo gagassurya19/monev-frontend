@@ -74,8 +74,6 @@ export function ChartSection({ title, subtitle, params, className }: ChartSectio
 
   React.useEffect(() => {
     if (!params) return;
-    const allow = params.prodi_id || params.show_all === 'true';
-    if (!allow) return;
     setAppliedParams(params);
   }, [params]);
 
@@ -92,7 +90,7 @@ export function ChartSection({ title, subtitle, params, className }: ChartSectio
     );
   }
 
-  if (!params || (!params.prodi_id && params.show_all !== 'true')) return null;
+  if (!params) return null;
 
   return (
     <div className={className}>
