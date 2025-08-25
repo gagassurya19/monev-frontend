@@ -23,16 +23,33 @@ import {
   Lock
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { apiClient } from '@/lib/api-client';
 import { MataKuliahMultiSelect } from '@/components/matkul-multiselect';
 import { MatkulFilterOption } from '@/lib/types';
+
+// Interface for token generation API response
+interface GenerateTokenResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    token: string;
+    tokenInfo: {
+      header: any;
+      payload: any;
+      expiresIn: number;
+      isExpired: boolean;
+    };
+  };
+  errors?: any[];
+}
 import { FilterDropdown } from '@/components/filter-dropdown';
 import ClientDate from '@/components/ClientDate';
 
 export default function TokenGeneratorPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth(); // Get token from auth context
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
-  const [expirationMinutes, setExpirationMinutes] = useState(5);
+  const [expirationMinutes, setExpirationMinutes] = useState(60);
   const [userRole, setUserRole] = useState('admin');
   const [kampus, setKampus] = useState('');
   const [fakultas, setFakultas] = useState('');
@@ -42,11 +59,25 @@ export default function TokenGeneratorPage() {
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [copySuccess, setCopySuccess] = useState<string>('');
   const [selectedMatkul, setSelectedMatkul] = useState<MatkulFilterOption[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // API-based filter state - using IDs for API calls
-  const [selectedFakultasId, setSelectedFakultasId] = useState('');
-  const [selectedProdiId, setSelectedProdiId] = useState('');
+  const [selectedFakultasId, setSelectedFakultasId] = useState<string>('');
+  const [selectedProdiId, setSelectedProdiId] = useState<string>('');
   const [selectedMataKuliahId, setSelectedMataKuliahId] = useState('');
+
+  // Generate random numeric ID
+  const generateRandomId = () => {
+    const randomNum = Math.floor(Math.random() * 90000) + 10000; // Generate 5-digit number
+    return randomNum.toString(); // Convert to string for backend validation
+  };
+
+  // Auto-generate ID when component mounts
+  useEffect(() => {
+    // No random data generation, so set default values or empty
+    setUsername('');
+    setName('');
+  }, []);
 
   // Get kampus code for API
   const getKampusCode = (university: string) => {
@@ -121,7 +152,7 @@ export default function TokenGeneratorPage() {
       );
   }
 
-  const generateToken = () => {
+  const generateToken = async () => {
     if (!username.trim()) {
       alert('Please enter a username');
       return;
@@ -139,24 +170,58 @@ export default function TokenGeneratorPage() {
       return;
     }
 
-    const data = {
+    const data: any = {
+      id: generateRandomId(), // Generate random numeric ID as string
       username: username,
       name: name,
       expirationMinutes: expirationMinutes,
-      userRole: userRole,
-      kampus: kampus,
-      fakultas: fakultas,
-      prodi: prodi
+      userRole: userRole
+    };
+
+    // Only add fields if they have values
+    if (kampus && kampus.trim() !== '') {
+      data.kampus = kampus;
     }
 
-    const token = JWTGenerator.generateTestToken(data);
-    const url = JWTGenerator.generateTokenURL(data);
-    const info = JWTGenerator.getTokenInfo(token);
+    if (fakultas && fakultas.trim() !== '') {
+      data.fakultas = fakultas;
+    }
 
-    setGeneratedToken(token);
-    setGeneratedURL(url);
-    setTokenInfo(info);
-    setCopySuccess('');
+    if (prodi && prodi.trim() !== '') {
+      data.prodi = prodi;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      // Call backend API to generate token
+      const response = await apiClient.post<GenerateTokenResponse>('/api/v1/auth/generate-token', data);
+
+      if (response.success) {
+        // Token generated successfully from backend
+        const token = response.data.token;
+        const tokenInfo = response.data.tokenInfo;
+        
+        // Generate URL with the token
+        const url = `${window.location.origin}/?token=${token}`;
+        
+        setGeneratedToken(token);
+        setGeneratedURL(url);
+        setTokenInfo(tokenInfo);
+        setCopySuccess('');
+      } else {
+        // API returned error
+        alert(`Error: ${response.message}`);
+        if (response.errors) {
+          console.error('Validation errors:', response.errors);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating token:', error);
+      alert('Error generating token. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -230,7 +295,6 @@ export default function TokenGeneratorPage() {
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="expiration">Expiration Time</Label>
                   <Select
@@ -317,9 +381,21 @@ export default function TokenGeneratorPage() {
                 )}
               </div>
 
-              <Button onClick={generateToken} className="w-full" disabled={!username.trim()}>
-                <Key className="w-4 h-4 mr-2" />
-                Generate Token
+              <Button onClick={generateToken} className="w-full" disabled={!username.trim() || isGenerating}>
+                {isGenerating ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4 mr-2" />
+                    Generate Token
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -368,6 +444,28 @@ export default function TokenGeneratorPage() {
                       <div>
                         <p className="text-sm font-medium">Valid Token</p>
                         <p className="text-xs text-gray-500">Ready to use</p>
+                      </div>
+                    </div>
+
+                    {/* Validation Status */}
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {tokenInfo.isValid ? 'Signature Valid' : 'Signature Invalid'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {tokenInfo.isValid ? 'Token verified' : 'Token verification failed'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* API Status */}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium">Backend Generated</p>
+                        <p className="text-xs text-gray-500">Token created via API</p>
                       </div>
                     </div>
                   </div>
@@ -420,9 +518,14 @@ export default function TokenGeneratorPage() {
                                 <div>
                                   <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Payload:</h4>
                                   <ul className="text-xs text-blue-800 dark:text-blue-200 mt-1 space-y-1">
+                                    <li><code>id</code>: User ID (numeric)</li>
+                                    <li><code>username</code>: Username</li>
                                     <li><code>sub</code>: Subject (username)</li>
                                     <li><code>name</code>: Display name</li>
-                                    <li><code>admin</code>: Admin privileges</li>
+                                    <li><code>admin</code>: Admin privileges (0/1)</li>
+                                    <li><code>kampus</code>: University campus</li>
+                                    <li><code>fakultas</code>: Faculty</li>
+                                    <li><code>prodi</code>: Study program</li>
                                     <li><code>exp</code>: Expiration timestamp</li>
                                     <li><code>iat</code>: Issued at timestamp</li>
                                   </ul>
@@ -431,7 +534,7 @@ export default function TokenGeneratorPage() {
                                 <div>
                                   <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Signature:</h4>
                                   <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">
-                                    HMAC SHA256 hash using SECRET_KEY
+                                    HMAC SHA256 generated from backend API
                                   </p>
                                 </div>
                               </div>

@@ -14,6 +14,11 @@ export const API_CONFIG = {
   TOKEN_STORAGE_KEY: 'auth_token',
 } as const;
 
+// JWT Configuration
+export const JWT_CONFIG = {
+  SECRET_KEY: process.env.JWT_SECRET || 'SECRET123',
+} as const;
+
 // Environment-specific configurations
 export const isDevelopment = process.env.NODE_ENV === 'development';
 export const isProduction = process.env.NODE_ENV === 'production';

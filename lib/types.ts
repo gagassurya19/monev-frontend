@@ -238,9 +238,11 @@ export interface ErrorResponse {
 
 // JWT Authentication types
 export interface JWTPayload {
+  id?: string | number;
+  username?: string;
   sub: string;
   name?: string;
-  admin?: boolean;
+  admin?: boolean | number; // Allow both boolean and number (0/1) for backend compatibility
   kampus?: string;
   fakultas?: string;
   prodi?: string;

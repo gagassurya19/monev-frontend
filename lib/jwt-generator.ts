@@ -1,18 +1,21 @@
-// JWT Token Generator for Testing
-// This is a simplified implementation for frontend testing purposes only
-// In production, tokens should be generated on the server-side
+// JWT Token Generator for Browser Environment
+// This creates JWT tokens compatible with backend structure
 
-import { JWTPayload } from './types';
+import { JWT_CONFIG } from './config';
 
 export class JWTGenerator {
   /**
-   * Simple base64url encoding
+   * Base64url encoding for JWT (browser compatible)
    */
   private static base64urlEncode(str: string): string {
-    return btoa(str)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+    // Convert to base64 first
+    const base64 = btoa(str);
+    
+    // Replace characters according to JWT standard
+    return base64
+      .replace(/\+/g, '-')  // Replace + with -
+      .replace(/\//g, '_')  // Replace / with _
+      .replace(/=/g, '');   // Remove padding
   }
 
   /**
@@ -31,52 +34,85 @@ export class JWTGenerator {
    */
   private static createPayload(data: any): string {
     const now = Math.floor(Date.now() / 1000);
-    const payload: JWTPayload = {
+    const payload = {
+      id: parseInt(data.id) || 1,
+      username: data.username,
       sub: data.username,
       name: data.name,
       kampus: data.kampus,
       fakultas: data.fakultas,
       prodi: data.prodi,
-      admin: data.userRole === 'admin',
-      exp: now + (data.expirationMinutes * 60), // Convert minutes to seconds
+      admin: data.userRole === 'admin' ? 1 : 0,
+      exp: now + (data.expirationMinutes * 60),
       iat: now
     };
     return this.base64urlEncode(JSON.stringify(payload));
   }
 
   /**
-   * Simple HMAC SHA256 simulation (NOT SECURE - for testing only)
-   * In production, use proper cryptographic libraries
+   * Create HMAC-SHA256 signature (browser compatible)
    */
-  private static createSignature(data: any, secret: string): string {
-    // This is a simplified signature for testing purposes
-    // In production, use proper HMAC SHA256
+  private static async createSignature(data: string, secret: string): Promise<string> {
+    try {
+      // Try to use Web Crypto API if available
+      if (typeof crypto !== 'undefined' && crypto.subtle) {
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(secret);
+        const messageData = encoder.encode(data);
+        
+        // Import key
+        const key = await crypto.subtle.importKey(
+          'raw',
+          keyData,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        );
+        
+        // Sign the data
+        const signature = await crypto.subtle.sign('HMAC', key, messageData);
+        
+        // Convert to base64url
+        const signatureArray = new Uint8Array(signature);
+        const signatureBase64 = btoa(String.fromCharCode(...signatureArray));
+        return this.base64urlEncode(signatureBase64);
+      }
+    } catch (error) {
+      console.warn('Web Crypto API failed, using fallback:', error);
+    }
+    
+    // Fallback: Simple hash function for compatibility
     let hash = 0;
-    const combined = JSON.stringify(data) + secret;
+    const combined = data + secret;
+    
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    return this.base64urlEncode(Math.abs(hash).toString(36));
+    
+    // Create a more predictable signature
+    const hashString = Math.abs(hash).toString(36);
+    return this.base64urlEncode(hashString);
   }
 
   /**
-   * Generate a JWT token for testing
-   * WARNING: This is for testing purposes only and is not cryptographically secure
+   * Generate JWT token that matches backend structure exactly
    */
-  static generateTestToken(data: any): string {
+  static async generateToken(data: any): Promise<string> {
     const header = this.createHeader();
     const payload = this.createPayload(data);
-    const signature = this.createSignature(data, 'SECRET123');
+    const dataToSign = `${header}.${payload}`;
+    
+    const signature = await this.createSignature(dataToSign, JWT_CONFIG.SECRET_KEY);
     return `${header}.${payload}.${signature}`;
   }
 
   /**
    * Generate token URL for testing
    */
-  static generateTokenURL(data: any, baseURL?: string): string {
-    const token = this.generateTestToken(data);
+  static async generateTokenURL(data: any, baseURL?: string): Promise<string> {
+    const token = await this.generateToken(data);
     const url = baseURL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     return `${url}/?token=${token}`;
   }
@@ -86,7 +122,7 @@ export class JWTGenerator {
    */
   static getTokenInfo(token: string): {
     header: any;
-    payload: JWTPayload;
+    payload: any;
     isExpired: boolean;
     expiresIn: number;
   } | null {
@@ -109,6 +145,56 @@ export class JWTGenerator {
       };
     } catch (error) {
       console.error('Error parsing token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Validate JWT token signature
+   */
+  static async validateToken(token: string): Promise<boolean> {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+
+      const header = parts[0];
+      const payload = parts[1];
+      const signature = parts[2];
+
+      const dataToSign = `${header}.${payload}`;
+      const expectedSignature = await this.createSignature(dataToSign, JWT_CONFIG.SECRET_KEY);
+      
+      return signature === expectedSignature;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get complete token validation info
+   */
+  static async getTokenValidationInfo(token: string): Promise<{
+    isValid: boolean;
+    header: any;
+    payload: any;
+    isExpired: boolean;
+    expiresIn: number;
+    signatureValid: boolean;
+  } | null> {
+    try {
+      const tokenInfo = this.getTokenInfo(token);
+      if (!tokenInfo) return null;
+
+      const isValid = await this.validateToken(token);
+      
+      return {
+        ...tokenInfo,
+        isValid,
+        signatureValid: isValid
+      };
+    } catch (error) {
+      console.error('Error getting token validation info:', error);
       return null;
     }
   }

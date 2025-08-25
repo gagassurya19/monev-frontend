@@ -66,7 +66,7 @@ Buat file `.env.local` di root directory dan isi dengan konfigurasi berikut:
 DATABASE_URL="your_database_connection_string"
 
 # JWT Configuration
-JWT_SECRET="your_jwt_secret_key"
+JWT_SECRET="your_JWT_SECRET"
 JWT_EXPIRES_IN="24h"
 
 # API Configuration
