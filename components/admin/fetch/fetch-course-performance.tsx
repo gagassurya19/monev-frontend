@@ -133,7 +133,7 @@ interface ETLCPTestResponse {
   };
 }
 
-export default function FetchCoursePerformance() {
+export default function FetchCoursePerformance({ hideControls = false }: { hideControls?: boolean }) {
   const { token } = useAuth();
   const [limit, setLimit] = useState(20);
   const [offset, setOffset] = useState(0);
@@ -258,20 +258,22 @@ export default function FetchCoursePerformance() {
           <BarChart3 className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-semibold">ETL CP - Fetch Course Performance</h2>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => runETL()} disabled={isRunLoading} className="h-10">
-            {isRunLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-            Run ETL CP
-          </Button>
-          <Button onClick={handleCheckStatus} disabled={isStatusLoading} variant="secondary" className="h-10">
-            {isStatusLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-            Check Status
-          </Button>
-          <Button onClick={() => testAPI()} disabled={isTestLoading} variant="outline" className="h-10">
-            {isTestLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-            Test API
-          </Button>
-        </div>
+        {!hideControls && (
+          <div className="flex gap-2">
+            <Button onClick={() => runETL()} disabled={isRunLoading} className="h-10">
+              {isRunLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+              Run ETL CP
+            </Button>
+            <Button onClick={handleCheckStatus} disabled={isStatusLoading} variant="secondary" className="h-10">
+              {isStatusLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+              Check Status
+            </Button>
+            <Button onClick={() => testAPI()} disabled={isTestLoading} variant="outline" className="h-10">
+              {isTestLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Test API
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Status Result */}

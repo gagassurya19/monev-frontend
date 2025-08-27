@@ -59,7 +59,7 @@ export default function CeloeBackendCP() {
             {/* Content Section */}
             <div className="mt-8">
                 {activeSection === 'data-activity' && (
-                    <CeLOEETLTab />
+                    <CeLOEETLTab hideControls />
                 )}
             </div>
         </div>

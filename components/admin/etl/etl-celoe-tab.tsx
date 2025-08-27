@@ -115,7 +115,7 @@ interface CeLOEETLExportResponse {
   }>;
 }
 
-export default function CeLOEETLTab({}: {}) {
+export default function CeLOEETLTab({ hideControls = false }: { hideControls?: boolean }) {
     const [etlStatus, setEtlStatus] = useState<CeLOEETLStatus | null>(null);
     const [etlLogs, setEtlLogs] = useState<CeLOEETLLog[]>([]);
     const [isLoadingStatus, setIsLoadingStatus] = useState(false);
@@ -268,100 +268,102 @@ export default function CeLOEETLTab({}: {}) {
     return (
         <div className="space-y-6">
             {/* ETL Control Panel */}
-            <div className="grid gap-6 mb-8">
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Play className="w-5 h-5 text-green-600" />
-                                    CELOE Control Panel
-                                </CardTitle>
+            {!hideControls && (
+                <div className="grid gap-6 mb-8">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Play className="w-5 h-5 text-green-600" />
+                                        CELOE Control Panel
+                                    </CardTitle>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleFetchETLStatus}
+                                    disabled={isLoadingStatus}
+                                >
+                                    {isLoadingStatus ? (
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                    )}
+                                    Refresh Status
+                                </Button>
                             </div>
-                            <Button
-                                variant="outline"
-                                onClick={handleFetchETLStatus}
-                                disabled={isLoadingStatus}
-                            >
-                                {isLoadingStatus ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                ) : (
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                )}
-                                Refresh Status
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {/* ETL Run Parameters */}
-                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                        </CardHeader>
+                        <CardContent>
+                            {/* ETL Run Parameters */}
+                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label htmlFor="cp-start-date" className="text-sm font-medium text-gray-700">
+                                            Start Date
+                                        </label>
+                                        <input
+                                            id="cp-start-date"
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label htmlFor="cp-concurrency" className="text-sm font-medium text-gray-700">
+                                            Concurrency
+                                        </label>
+                                        <input
+                                            id="cp-concurrency"
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={concurrency}
+                                            onChange={(e) => setConcurrency(Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label htmlFor="cp-start-date" className="text-sm font-medium text-gray-700">
-                                        Start Date
-                                    </label>
-                                    <input
-                                        id="cp-start-date"
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="cp-concurrency" className="text-sm font-medium text-gray-700">
-                                        Concurrency
-                                    </label>
-                                    <input
-                                        id="cp-concurrency"
-                                        type="number"
-                                        min="1"
-                                        max="10"
-                                        value={concurrency}
-                                        onChange={(e) => setConcurrency(Number(e.target.value))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Button
-                                onClick={handleRunETL}
-                                disabled={isRunningETL || etlStatus?.data.last_run?.status_code === 2}
-                                className="h-16"
-                            >
-                                {isRunningETL ? (
-                                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                ) : (
-                                    <Database className="w-5 h-5 mr-2" />
-                                )}
-                                <div className="flex flex-col">
-                                    <span className="font-semibold">Run ETL</span>
-                                    <span className="text-xs opacity-80">Start data extraction</span>
-                                </div>
-                            </Button>
+                                <Button
+                                    onClick={handleRunETL}
+                                    disabled={isRunningETL || etlStatus?.data.last_run?.status_code === 2}
+                                    className="h-16"
+                                >
+                                    {isRunningETL ? (
+                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                    ) : (
+                                        <Database className="w-5 h-5 mr-2" />
+                                    )}
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold">Run ETL</span>
+                                        <span className="text-xs opacity-80">Start data extraction</span>
+                                    </div>
+                                </Button>
 
-                            <Button
-                                onClick={handleCleanETL}
-                                disabled={isCleaning}
-                                variant="outline"
-                                className="h-16 border-orange-200 hover:bg-orange-50"
-                            >
-                                {isCleaning ? (
-                                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                ) : (
-                                    <Trash2 className="w-5 h-5 mr-2 text-orange-600" />
-                                )}
-                                <div className="flex flex-col">
-                                    <span className="font-semibold">Clean Data</span>
-                                    <span className="text-xs opacity-80">Clear all ETL data</span>
-                                </div>
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                                <Button
+                                    onClick={handleCleanETL}
+                                    disabled={isCleaning}
+                                    variant="outline"
+                                    className="h-16 border-orange-200 hover:bg-orange-50"
+                                >
+                                    {isCleaning ? (
+                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                    ) : (
+                                        <Trash2 className="w-5 h-5 mr-2 text-orange-600" />
+                                    )}
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold">Clean Data</span>
+                                        <span className="text-xs opacity-80">Clear all ETL data</span>
+                                    </div>
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Clean Response Alert */}
             {lastCleanResponse && (

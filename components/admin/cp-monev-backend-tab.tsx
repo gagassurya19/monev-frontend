@@ -60,7 +60,7 @@ export default function MonevBackendCP() {
             {/* Content Section */}
             <div className="mt-8">
                 {activeSection === 'data-activity' && (
-                    <FetchCoursePerformance />
+                    <FetchCoursePerformance hideControls />
                 )}
             </div>
         </div>

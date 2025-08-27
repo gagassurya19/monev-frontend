@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
       HISTORY: '/api/v1/etl-cp/history',
       STATUS: '/api/v1/etl-cp/status',
       TEST_API: '/api/v1/etl-cp/test-api',
+      ORCHESTRATE: '/api/v1/etl-cp/orchestrate',
     }
   },
   SAS: {
