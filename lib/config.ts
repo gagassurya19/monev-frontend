@@ -88,6 +88,7 @@ export const API_ENDPOINTS = {
       HISTORY: '/api/v1/etl-sas/history',
       STATUS: '/api/v1/etl-sas/status',
       TEST_API: '/api/v1/etl-sas/test-api',
+      ORCHESTRATE: '/api/v1/etl-sas/orchestrate',
     }
   },
   AUTH: {
