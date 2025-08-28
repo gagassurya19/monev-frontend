@@ -39,6 +39,9 @@ export const API_ENDPOINTS = {
       LOGS: "/api/v1/celoeapi/cp/etl/logs",
       RUN: "/api/v1/celoeapi/cp/etl/run",
       CLEAN: "/api/v1/celoeapi/cp/etl/clean",
+      RUN_INCREMENTAL: "/api/v1/celoeapi/cp/etl/run-incremental",
+      CLEAR_STUCK: "/api/v1/celoeapi/cp/etl/clear-stuck",
+      FORCE_CLEAR: "/api/v1/celoeapi/cp/etl/force-clear",
     },
     ETL_MONEV: {
       RUN: "/api/v1/etl-cp/run",
