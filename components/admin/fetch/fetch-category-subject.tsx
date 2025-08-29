@@ -36,7 +36,8 @@ import {
     getFetchCategorySubjectLogs,
     getFetchCategorySubjectLogDetail,
     streamFetchCategorySubjectLogs,
-    getCategorySubjectData
+    getCategorySubjectData,
+    stopFetchCategorySubject
 } from '@/lib/api/etl-activity';
 import { formatDateTime, formatDuration } from '@/lib/utils/date-formatter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -90,6 +91,8 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
     const [logs, setLogs] = useState<any[]>([]);
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [isRunningFetch, setIsRunningFetch] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
+    const [stopResult, setStopResult] = useState<{ message: string; data?: any } | null>(null);
     const [logLimit, setLogLimit] = useState(5);
     const [logOffset, setLogOffset] = useState(0);
     const [hasConnectionError, setHasConnectionError] = useState(false);
@@ -292,6 +295,50 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
         }
     };
 
+    const handleStopFetch = async () => {
+        if (isStopping) return;
+        setIsStopping(true);
+        setStopResult(null);
+        
+        try {
+            const response = await stopFetchCategorySubject();
+            
+            if (response.status === true) {
+                setStopResult({
+                    message: response.message,
+                    data: response.data
+                });
+                
+                // Reset running state
+                setIsRunningFetch(false);
+                
+                // Refresh logs to show updated status
+                await handleFetchLogs();
+                
+                toast({
+                    title: "Pipeline Stopped",
+                    description: response.message,
+                    variant: "default",
+                });
+            } else {
+                toast({
+                    title: "Stop Failed",
+                    description: response.message || 'Failed to stop pipeline',
+                    variant: "destructive",
+                });
+            }
+        } catch (error: any) {
+            console.error('Error stopping fetch:', error);
+            toast({
+                title: "Stop Failed",
+                description: error?.message || 'Failed to stop pipeline',
+                variant: "destructive",
+            });
+        } finally {
+            setIsStopping(false);
+        }
+    };
+
     const handleViewLogDetail = async (logId: string) => {
         setSelectedLogId(logId);
         setIsDetailModalOpen(true);
@@ -439,22 +486,75 @@ export default function FetchCategorySubject({ }: FetchCategorySubjectProps) {
                     <Database className="w-5 h-5 text-blue-600" />
                     <h2 className="text-xl font-semibold">Category & Subject Management</h2>
                 </div>
-                <Button
-                    onClick={handleRunFetch}
-                    disabled={isRunningFetch}
-                    className="h-12"
-                >
-                    {isRunningFetch ? (
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                        <Play className="w-5 h-5 mr-2" />
-                    )}
-                    <div className="flex flex-col">
-                        <span className="font-semibold">Run Fetch</span>
-                        <span className="text-xs opacity-80">Start category subject fetch process</span>
-                    </div>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={handleRunFetch}
+                        disabled={isRunningFetch}
+                        className="h-12"
+                    >
+                        {isRunningFetch ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <Play className="w-5 h-5 mr-2" />
+                        )}
+                        <div className="flex flex-col">
+                            <span className="font-semibold">Run Fetch</span>
+                            {/* <span className="text-xs opacity-80">Start category subject fetch process</span> */}
+                        </div>
+                    </Button>
+                    <Button
+                        onClick={handleStopFetch}
+                        disabled={isStopping || !isRunningFetch}
+                        variant="destructive"
+                        className="h-12"
+                    >
+                        {isStopping ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <Square className="w-5 h-5 mr-2" />
+                        )}
+                        <div className="flex flex-col">
+                            <span className="font-semibold">Stop</span>
+                            {/* <span className="text-xs opacity-80">Stop running fetch process</span> */}
+                        </div>
+                    </Button>
+                </div>
             </div>
+
+            {/* Stop Result Display */}
+            {stopResult && (
+                <Alert className="mb-4">
+                    <AlertTitle>Pipeline Stopped</AlertTitle>
+                    <AlertDescription>
+                        <div className="space-y-2">
+                            <div className="text-sm">{stopResult.message}</div>
+                            {stopResult.data && (
+                                <div className="text-xs text-gray-700">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                        <div>
+                                            <span className="font-medium">Status:</span> {stopResult.data.status}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Stopped At:</span> {formatDateTime(stopResult.data.stopped_at)}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Cleanup Performed:</span> {stopResult.data.cleanup_performed ? 'Yes' : 'No'}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Operations Aborted:</span> {stopResult.data.operations_aborted ? 'Yes' : 'No'}
+                                        </div>
+                                    </div>
+                                    {stopResult.data.message && (
+                                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                                            {stopResult.data.message}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {/* Data Testing Section */}
             <Card>

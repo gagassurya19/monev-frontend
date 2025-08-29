@@ -81,6 +81,7 @@ export const API_ENDPOINTS = {
     },
     FETCH: {
       SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/category-subject/run',
+      STOP_PIPELINE: '/api/v1/sas-category-subject/category-subject/stop',
       LOGS_SUBJECT_CATEGORIES_FETCH: '/api/v1/sas-category-subject/category-subject/logs',
       LOGS_DETAIL_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}',
       LOGS_REALTIME_SUBJECT_CATEGORIES: '/api/v1/sas-category-subject/logs/{logId}/realtime',

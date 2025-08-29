@@ -368,6 +368,20 @@ export async function streamFetchCategorySubjectLogs(
 }
 
 /**
+ * Stop SAS Category Subject ETL process
+ * @returns Promise<any>
+ */
+export async function stopFetchCategorySubject(): Promise<any> {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.SAS.FETCH.STOP_PIPELINE);
+    return response;
+  } catch (error) {
+    console.error('Error stopping SAS Category Subject ETL process:', error);
+    throw error;
+  }
+}
+
+/**
  * Get category and subject data for testing
  * @param params - Query parameters for filtering and pagination
  * @returns Promise<any> - Category and subject data response
