@@ -1,19 +1,19 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { getSPSummary, getSPSummaryDetail } from "@/lib/api/etl-sp";
 import {
-  getCourses,
-  getCourseActivities,
-  getActivityStudents,
-  CoursesFilters,
-  ActivitiesFilters,
-  StudentsFilters,
-  ApiError,
-  getETLStatus,
-} from "@/lib/api";
-import { ETLStatus } from "@/lib/etl-types";
-import { useAuth } from "@/lib/auth-context";
-
+  SpEtlSummary,
+  SpEtlSummaryResponse,
+  Pagination,
+  SpEtlSummaryDetailResponse,
+} from "@/lib/types/student-performance";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+} from "@/components/ui/breadcrumb";
 import {
   Card,
   CardContent,
@@ -42,224 +42,82 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
 import {
   BookOpen,
   Search,
   FileText,
   ClipboardList,
   HelpCircle,
-  Users,
-  Clock,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight as ChevronRightIcon,
-  Filter,
-  SortAsc,
-  SortDesc,
-  Download,
   RefreshCw,
-  TrendingUp,
-  Activity,
-  GraduationCap,
-  BarChart3,
-  Eye,
-  Calendar,
-  Star,
   X,
-  LogOut,
-  Shield,
-  User,
-  Hash,
   Home,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  User,
+  GraduationCap,
+  Star,
+  TrendingUp,
+  Eye,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-} from "@/components/ui/breadcrumb";
+import { useAuth } from "@/lib/auth-context";
 
-// Database schema interfaces - matching real database structure
-interface Course {
-  course_id: number;
-  course_name: string;
-  kelas: string;
-  jumlah_aktivitas: number;
-  jumlah_mahasiswa: number;
-  dosen_pengampu: string;
-}
-
-interface ActivitySummary {
-  id: number;
-  course_id: number;
-  section: number;
-  activity_id: number;
-  activity_type: string;
-  activity_name: string;
-  accessed_count: number;
-  submission_count: number | null; // only for assignment
-  graded_count: number | null; // only for assignment
-  attempted_count: number | null; // only for quiz
-  created_at: string;
-}
-
-interface StudentQuizDetail {
-  id: number;
-  quiz_id: number;
-  user_id: number;
-  nim: string;
-  full_name: string;
-  waktu_mulai: string;
-  waktu_selesai: string;
-  durasi_pengerjaan: string;
-  jumlah_soal: number;
-  jumlah_dikerjakan: number;
-  nilai: number;
-}
-
-interface StudentAssignmentDetail {
-  id: number;
-  assignment_id: number;
-  user_id: number;
-  nim: string;
-  full_name: string;
-  waktu_submit: string;
-  waktu_pengerjaan: string;
-  nilai: number;
-}
-
-interface StudentResourceAccess {
-  id: number;
-  resource_id: number;
-  user_id: number;
-  nim: string;
-  full_name: string;
-  waktu_akses: string;
-}
-
-interface StudentProfile {
-  user_id: number;
-  idnumber: string; // NIM
-  full_name: string;
-  email: string;
-  program_studi: string;
-}
-
-// Combined student data for display
-interface StudentDisplayData {
-  user_id: number;
-  nim: string;
-  full_name: string;
-  activity_type: string;
-  waktu_aktivitas: string;
-  durasi_pengerjaan?: string;
-  nilai?: number;
-  progress?: string;
-  email?: string;
-  program_studi?: string;
-}
-
-interface Filters {
-  course_name: string;
-  activity_type: string;
-  dosen_pengampu: string;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
-}
-
-// API-based data loading helpers
-const loadCoursesData = async (
+const loadStudentData = async (
   page: number = 1,
-  limit: number = 100,
-  searchTerm: string = "",
-  filters: Filters = {
-    course_name: "all",
-    activity_type: "all",
-    dosen_pengampu: "all",
-    sortBy: "course_name",
-    sortOrder: "asc",
-  }
-) => {
+  limit: number = 5,
+  search: string = "",
+  sort_by: string = "created_at",
+  sort_order: string = "desc"
+): Promise<SpEtlSummaryResponse> => {
   try {
-    const response = await getCourses({
+    const response = await getSPSummary(
       page,
       limit,
-      search: searchTerm || undefined,
-      dosen_pengampu:
-        filters.dosen_pengampu !== "all" ? filters.dosen_pengampu : undefined,
-      activity_type:
-        filters.activity_type !== "all" ? filters.activity_type : undefined,
-      sort_by: (filters.sortBy as CoursesFilters["sort_by"]) || "course_name",
-      sort_order: filters.sortOrder || "asc",
-    });
+      search,
+      sort_by,
+      sort_order
+    );
     return response;
   } catch (error) {
-    console.error("Error loading courses:", error);
-    throw error;
+    console.error("Error loading student data:", error);
+
+    // fallback dengan struktur SpEtlSummaryResponse
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to load student data",
+      timestamp: new Date().toISOString(),
+      data: [],
+      pagination: {
+        current_page: page,
+        total_pages: 0,
+        total_records: 0,
+        limit,
+        has_next_page: false,
+        has_prev_page: false,
+        next_page: null,
+        prev_page: null,
+      },
+    };
   }
 };
-
-const loadActivitiesForCourse = async (
-  courseId: number,
-  activityType?: string
-) => {
+const loadStudentCourseData = async (
+  user_id: number,
+  course_id: number
+): Promise<SpEtlSummaryDetailResponse> => {
   try {
-    const response = await getCourseActivities(courseId, {
-      activity_type: activityType as ActivitiesFilters["activity_type"],
-      limit: 50,
-    });
+    const response = await getSPSummaryDetail(user_id, course_id);
     return response;
   } catch (error) {
-    console.error(`Error loading activities for course ${courseId}:`, error);
-    throw error;
+    console.error("Error loading student course data:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to load student course data",
+      timestamp: new Date().toISOString(),
+      data: [],
+    };
   }
-};
-
-// Pagination hook
-const usePagination = (totalItems: number, itemsPerPage = 10) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
-  return {
-    currentPage,
-    totalPages,
-    startIndex,
-    endIndex,
-    setCurrentPage,
-    hasNext: currentPage < totalPages,
-    hasPrev: currentPage > 1,
-  };
 };
 
 // Skeleton components
@@ -325,7 +183,7 @@ const EmptyState = ({
   </div>
 );
 
-const EmptyCoursesState = () => (
+const EmptyStudentState = () => (
   <EmptyState
     icon={BookOpen}
     title="Tidak Ada Mata Kuliah"
@@ -343,214 +201,113 @@ const EmptyCoursesState = () => (
   />
 );
 
-const EmptyActivitiesState = () => (
+const EmptyCourseState = () => (
   <div className="py-6 text-center">
     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-300">
       <FileText className="w-8 h-8 text-gray-400" />
     </div>
     <h4 className="text-sm font-medium text-gray-700 mb-2">
-      Tidak Ada Aktivitas
+      Tidak Ada Mata Kuliah
     </h4>
     <p className="text-xs text-gray-600">
-      Belum ada aktivitas yang tersedia dalam mata kuliah ini
+      Belum ada mata kuliah yang tersedia atau sesuai dengan filter pencarian
+      Anda.
     </p>
   </div>
 );
 
-export default function OptimizedDashboard() {
-  // Auth state
+export default function StudentPerformance() {
   const { user, signOut } = useAuth();
 
-  // Loading states
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // State management for expanded items
-  const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
-    new Set()
-  );
-
-  // Search and filter states
-  const [searchInput, setSearchInput] = useState(""); // For input field value
-  const [globalSearch, setGlobalSearch] = useState(""); // For actual search that triggers fetch
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [filters, setFilters] = useState<Filters>({
-    course_name: "all",
-    activity_type: "all",
-    dosen_pengampu: "all",
-    sortBy: "keaktifan",
-    sortOrder: "desc",
-  });
-
-  // API-based data states
-  const [coursesData, setCoursesData] = useState<{
-    courses: Course[];
-    pagination: any;
-    total: number;
-  }>({ courses: [], pagination: null, total: 0 });
-
-  const [activitiesCache, setActivitiesCache] = useState<
-    Map<number, ActivitySummary[]>
-  >(new Map());
-  const [loadingActivities, setLoadingActivities] = useState<Set<number>>(
-    new Set()
-  );
-  const [etlStatus, setEtlStatus] = useState<ETLStatus | null>(null);
-  const [etlLoading, setEtlLoading] = useState(false);
-
-  // Pagination state
+  // state payload get summary
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(5);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder] = useState("desc");
 
-  // Fetch ETL Status
-  const fetchETLStatus = async () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [studentData, setStudentData] = useState<SpEtlSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+
+  // Drilldown state management
+  const [expandedStudents, setExpandedStudents] = useState<Set<number>>(
+    new Set()
+  );
+  const [courseDataCache, setCourseDataCache] = useState<Map<number, any[]>>(
+    new Map()
+  );
+  const [loadingCourses, setLoadingCourses] = useState<Set<number>>(new Set());
+
+  // Method untuk load initial data
+  const loadInitialData = useCallback(async () => {
+    // Prevent multiple initial loads
+    if (isLoading || isInitialLoadComplete) return;
+
+    console.log("🔄 Loading initial data...");
+    setError(null);
+    setIsLoading(true);
     try {
-      setEtlLoading(true);
-      const data = await getETLStatus();
-      setEtlStatus(data);
+      const data = await loadStudentData(1, 5, "", "created_at", "desc");
+      console.log("✅ Initial data loaded successfully");
+      setStudentData(data.data);
+      setIsInitialLoadComplete(true);
     } catch (error) {
-      console.error("Error fetching ETL status:", error);
+      console.error("❌ Failed to load initial data:", error);
+      setError(error instanceof Error ? error.message : "Failed to load data");
     } finally {
-      setEtlLoading(false);
+      setIsLoading(false);
     }
-  };
+  }, [isLoading, isInitialLoadComplete]);
 
-  // Load ETL status on component mount
-  useEffect(() => {
-    fetchETLStatus();
-  }, []);
+  // Method untuk refresh data (dengan parameter current)
+  const handleRefresh = useCallback(() => {
+    // Prevent multiple simultaneous calls
+    if (isRefreshing) return;
 
-  // Load initial courses data
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setIsLoading(true);
-      setError(null);
+    setError(null);
+    setIsRefreshing(true);
+    loadStudentData(currentPage, limit, search, sortBy, sortOrder)
+      .then((data) => {
+        setStudentData(data.data);
+      })
+      .catch(setError)
+      .finally(() => setIsRefreshing(false));
+  }, [currentPage, limit, search, sortBy, sortOrder, isRefreshing]);
 
-      try {
-        const response = await loadCoursesData(
-          currentPage,
-          itemsPerPage,
-          globalSearch,
-          filters
-        );
-        setCoursesData({
-          courses: response.data,
-          pagination: response.pagination,
-          total: response.pagination.total_items,
-        });
+  const clearSearch = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isRefreshing) return;
 
-        // Update pagination info
-        if (response.pagination) {
-          setTotalPages(response.pagination.total_pages);
-          setTotalItems(response.pagination.total_items);
-          setCurrentPage(response.pagination.current_page);
-          setItemsPerPage(response.pagination.items_per_page);
-        }
-      } catch (err) {
-        const apiError = err as ApiError;
-        setError(`Failed to load courses: ${apiError.message}`);
-        console.error("Error loading courses:", apiError);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
-  }, [globalSearch, filters, currentPage, itemsPerPage]);
-
-  // Computed stats from API data
-  const stats = useMemo(() => {
-    const totalCourses = coursesData.total || 0;
-
-    // Calculate total activities from cache
-    const totalActivities = Array.from(activitiesCache.values()).flat().length;
-
-    // Calculate total students (placeholder for now)
-    const totalStudents = 0;
-
-    // Calculate average grade (placeholder for now)
-    const avgGrade = 0;
-
-    return { totalCourses, totalActivities, totalStudents, avgGrade };
-  }, [coursesData.total, activitiesCache]);
-
-  // Chart data
-  const chartData = useMemo(
-    () => [
-      { name: "Minggu 1", courses: 45, activities: 123, students: 890 },
-      { name: "Minggu 2", courses: 52, activities: 145, students: 920 },
-      { name: "Minggu 3", courses: 48, activities: 156, students: 950 },
-      { name: "Minggu 4", courses: 61, activities: 178, students: 1020 },
-    ],
-    []
-  );
-
-  // Use API data directly (filtering/sorting/pagination is handled by API)
-  const paginatedCourses = coursesData.courses;
-
-  // Load activities when course is expanded
-  const toggleCourse = useCallback(
-    async (courseId: number) => {
-      setExpandedCourses((prev) => {
-        const newSet = new Set(prev);
-        if (newSet.has(courseId)) {
-          newSet.delete(courseId);
-        } else {
-          newSet.add(courseId);
-
-          // Load activities if not already cached
-          if (!activitiesCache.has(courseId)) {
-            setLoadingActivities((prev) => new Set(prev).add(courseId));
-
-            loadActivitiesForCourse(
-              courseId,
-              filters.activity_type !== "all"
-                ? filters.activity_type
-                : undefined
-            )
-              .then((response) => {
-                setActivitiesCache((prev) =>
-                  new Map(prev).set(courseId, response.data)
-                );
-              })
-              .catch((err) => {
-                console.error(
-                  `Failed to load activities for course ${courseId}:`,
-                  err
-                );
-              })
-              .finally(() => {
-                setLoadingActivities((prev) => {
-                  const newSet = new Set(prev);
-                  newSet.delete(courseId);
-                  return newSet;
-                });
-              });
-          }
-        }
-        return newSet;
-      });
-    },
-    [activitiesCache, filters.activity_type]
-  );
-
-  const handleSearch = useCallback(
-    (value: string) => {
-      setGlobalSearch(value);
-      setCurrentPage(1); // Reset to first page on search
-      if (value.trim() && !recentSearches.includes(value.trim())) {
-        setRecentSearches((prev) => [value.trim(), ...prev.slice(0, 4)]);
-      }
-    },
-    [recentSearches]
-  );
+    setSearch("");
+    setCurrentPage(1);
+    // Reload data with empty search immediately
+    setError(null);
+    setIsRefreshing(true);
+    try {
+      const data = await loadStudentData(1, limit, "", sortBy, sortOrder);
+      setStudentData(data.data);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to load data");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [limit, sortBy, sortOrder, isRefreshing]);
 
   const executeSearch = useCallback(() => {
-    handleSearch(searchInput);
-  }, [searchInput, handleSearch]);
+    // Prevent multiple simultaneous calls
+    if (isRefreshing) return;
+
+    // Trigger search immediately without calling handleSearch to avoid infinite loop
+    setCurrentPage(1);
+    // Delay refresh to ensure currentPage is updated first
+    setTimeout(() => {
+      handleRefresh();
+    }, 0);
+  }, [handleRefresh, isRefreshing]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -561,253 +318,63 @@ export default function OptimizedDashboard() {
     [executeSearch]
   );
 
-  // Handle pagination
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  // Load initial data - HANYA SATU KALI
+  useEffect(() => {
+    loadInitialData();
+  }, []); // Only run once on mount
 
-  // Handle items per page change
-  const handleItemsPerPageChange = (items: number) => {
-    setItemsPerPage(items);
-    setCurrentPage(1); // Reset to first page when changing items per page
-  };
+  // Paginated data
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    return studentData.slice(startIndex, endIndex);
+  }, [studentData, currentPage, limit]);
 
-  const clearSearch = useCallback(() => {
-    setSearchInput("");
-    setGlobalSearch("");
-    setCurrentPage(1); // Reset to first page when clearing search
-  }, []);
+  // Toggle student drilldown
+  const toggleStudent = useCallback(
+    async (userId: number) => {
+      setExpandedStudents((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(userId)) {
+          newSet.delete(userId);
+        } else {
+          newSet.add(userId);
 
-  const clearFilters = useCallback(() => {
-    setFilters({
-      course_name: "all",
-      activity_type: "all",
-      dosen_pengampu: "all",
-      sortBy: "course_name",
-      sortOrder: "asc",
-    });
-    setSearchInput("");
-    setGlobalSearch("");
-    setCurrentPage(1); // Reset to first page when clearing filters
-  }, []);
+          // Load course data if not already cached
+          if (!courseDataCache.has(userId)) {
+            // Prevent multiple simultaneous calls for the same user
+            if (loadingCourses.has(userId)) return newSet;
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    setError(null);
+            console.log(`🔄 Loading course data for student ${userId}...`);
+            setLoadingCourses((prev) => new Set(prev).add(userId));
 
-    try {
-      // Clear caches
-      setActivitiesCache(new Map());
-      setExpandedCourses(new Set());
-
-      // Reload courses data with current pagination
-      const response = await loadCoursesData(
-        currentPage,
-        itemsPerPage,
-        globalSearch,
-        filters
-      );
-      setCoursesData({
-        courses: response.data,
-        pagination: response.pagination,
-        total: response.pagination.total_items,
+            // Load course data for this student
+            loadStudentCourseData(userId, 0) // course_id 0 means get all courses
+              .then((response) => {
+                console.log(`✅ Course data loaded for student ${userId}`);
+                setCourseDataCache((prev) =>
+                  new Map(prev).set(userId, response.data)
+                );
+              })
+              .catch((err) => {
+                console.error(
+                  `❌ Failed to load course data for student ${userId}:`,
+                  err
+                );
+              })
+              .finally(() => {
+                setLoadingCourses((prev) => {
+                  const newSet = new Set(prev);
+                  newSet.delete(userId);
+                  return newSet;
+                });
+              });
+          }
+        }
+        return newSet;
       });
-
-      // Update pagination info
-      if (response.pagination) {
-        setTotalPages(response.pagination.total_pages);
-        setTotalItems(response.pagination.total_items);
-        setCurrentPage(response.pagination.current_page);
-        setItemsPerPage(response.pagination.items_per_page);
-      }
-
-      // Also refresh ETL status
-      await fetchETLStatus();
-    } catch (err) {
-      const apiError = err as ApiError;
-      setError(`Failed to refresh data: ${apiError.message}`);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [globalSearch, filters, currentPage, itemsPerPage]);
-
-  // Utility functions
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "resource":
-        return <FileText className="w-4 h-4" />;
-      case "assign":
-        return <ClipboardList className="w-4 h-4" />;
-      case "quiz":
-        return <HelpCircle className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "quiz":
-        return "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100";
-      case "assign":
-        return "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100";
-      case "resource":
-        return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100";
-      default:
-        return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100";
-    }
-  };
-
-  const PaginationControls = () => (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-      {/* Items per page selector */}
-      <div className="flex items-center space-x-3">
-        <span className="text-sm text-gray-700 font-medium">Tampilkan:</span>
-        <Select
-          value={itemsPerPage.toString()}
-          onValueChange={(value) => handleItemsPerPageChange(Number(value))}
-        >
-          <SelectTrigger className="w-20 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="5">5</SelectItem>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-gray-600">per halaman</span>
-      </div>
-
-      {/* Pagination info */}
-      <div className="text-sm text-gray-700 font-medium">
-        Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
-        {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems}{" "}
-        mata kuliah
-      </div>
-
-      {/* Pagination controls */}
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage > 1) handlePageChange(currentPage - 1);
-                }}
-                className={
-                  currentPage <= 1 ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-
-            {/* First page */}
-            {currentPage > 2 && (
-              <>
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(1);
-                    }}
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                {currentPage > 3 && (
-                  <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                )}
-              </>
-            )}
-
-            {/* Previous page */}
-            {currentPage > 1 && (
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handlePageChange(currentPage - 1);
-                  }}
-                >
-                  {currentPage - 1}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-
-            {/* Current page */}
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                onClick={(e) => e.preventDefault()}
-              >
-                {currentPage}
-              </PaginationLink>
-            </PaginationItem>
-
-            {/* Next page */}
-            {currentPage < totalPages && (
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handlePageChange(currentPage + 1);
-                  }}
-                >
-                  {currentPage + 1}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-
-            {/* Last page */}
-            {currentPage < totalPages - 1 && (
-              <>
-                {currentPage < totalPages - 2 && (
-                  <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                )}
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(totalPages);
-                    }}
-                  >
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>
-            )}
-
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage < totalPages)
-                    handlePageChange(currentPage + 1);
-                }}
-                className={
-                  currentPage >= totalPages
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
-    </div>
+    },
+    [courseDataCache, loadingCourses]
   );
 
   if (isLoading) {
@@ -843,16 +410,13 @@ export default function OptimizedDashboard() {
                       Nama Mahasiswa
                     </TableHead>
                     <TableHead className="text-gray-800 font-semibold">
-                      Total Kursus
+                      Total Course
                     </TableHead>
                     <TableHead className="text-gray-800 font-semibold">
                       Total Login
                     </TableHead>
                     <TableHead className="text-right text-gray-800 font-semibold">
-                      Total Aktivitas
-                    </TableHead>
-                    <TableHead className="text-right text-gray-800 font-semibold">
-                      Total Partisipasi
+                      Total Aktifitas
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -883,9 +447,7 @@ export default function OptimizedDashboard() {
                     className="flex items-center gap-2 text-gray-700 hover:text-gray-800 transition-colors"
                   >
                     <Home className="w-4 h-4" strokeWidth={3} />
-                    <span className="text-sm font-medium">
-                      Student Performance
-                    </span>
+                    <span className="text-sm font-medium">Dashboard</span>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </Breadcrumb>
@@ -929,7 +491,6 @@ export default function OptimizedDashboard() {
       </header>
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Error Message */}
         {error && (
           <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -950,440 +511,416 @@ export default function OptimizedDashboard() {
             </Button>
           </div>
         )}
+      </div>
 
-        {/* status data update */}
-        {/* curl -X GET "http://localhost:8888/celoeapi/index.php/api/etl/status" \
-  -H "Authorization: Bearer default-webhook-token-change-this"
-  {"status":true,"data":{"status":"active","lastRun":{"id":"21","start_date":"2025-07-09 10:41:00","end_date":"2025-07-09 10:41:00","status":"finished","total_records":"15","offset":"0"},"nextRun":"Every hour at minute 0","isRunning":false}}%  */}
-
-        {/* Main Content */}
-        <Card>
-          <CardHeader className="bg-teal-800 text-white">
-            <CardTitle className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-lg sm:text-xl">Student Performance</span>
-              <div className="flex items-center justify-between sm:space-x-2">
-                <Badge
-                  variant="secondary"
-                  className="bg-white text-gray-700 hover:bg-white text-sm"
-                >
-                  {totalItems} Mahasiswa
-                </Badge>
-                {/* {(filters.course_name !== "all" || filters.dosen_pengampu !== "all" || filters.activity_type !== "all" || globalSearch) && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-white hover:bg-teal-600 hover:text-white ml-2">
-                    <X className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Clear</span>
-                  </Button>
-                )} */}
-              </div>
-            </CardTitle>
-
-            {/* Search Bar */}
-            <div className="pt-3">
-              <div className="relative flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Cari mata kuliah, dosen, atau kelas... (Enter untuk cari)"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="pl-10 pr-10 bg-white text-gray-900 focus-visible:ring-0 h-10"
-                  />
-                  {(searchInput || globalSearch) && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors"
-                      type="button"
-                      aria-label="Clear search"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  onClick={executeSearch}
-                  className="bg-white text-gray-700 hover:bg-gray-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4 shadow-sm transition-all duration-200"
-                  size="default"
-                >
-                  <Search className="w-4 h-4 mr-2" strokeWidth={3} />
-                  Cari
-                </Button>
-              </div>
+      {/* Main Content */}
+      <Card>
+        <CardHeader className="bg-teal-800 text-white">
+          <CardTitle className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-lg sm:text-xl">Course Performance</span>
+            <div className="flex items-center justify-between sm:space-x-2">
+              <Badge
+                variant="secondary"
+                className="bg-white text-gray-700 hover:bg-white text-sm"
+              >
+                {studentData.length} mahasiswa
+              </Badge>
             </div>
-          </CardHeader>
+          </CardTitle>
 
-          <CardContent className="p-0">
-            {/* Responsive Table */}
-            <div className="overflow-x-auto">
+          {/* Search Bar */}
+          <div className="pt-3">
+            <div className="relative flex gap-2 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Cari Nama Mahasiswa (Enter untuk cari)"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="pl-10 pr-10 bg-white text-gray-900 focus-visible:ring-0 h-10"
+                />
+                {search && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    type="button"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                onClick={executeSearch}
+                className="bg-white text-gray-700 hover:bg-gray-800 hover:text-white font-semibold focus-visible:ring-0 h-10 px-4 shadow-sm transition-all duration-200"
+                size="default"
+              >
+                <Search className="w-4 h-4 mr-2" strokeWidth={3} />
+                Cari
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {studentData.length === 0 ? (
+            <EmptyStudentState />
+          ) : (
+            <div className="space-y-4">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 border-b-2 border-gray-200">
-                    <TableHead className="w-[50px] text-gray-800 font-semibold"></TableHead>
-                    <TableHead className="text-gray-800 font-semibold">
+                    <TableHead className="w-[50px] text-center text-gray-800 font-semibold">
+                      No
+                    </TableHead>
+                    <TableHead className="text-left text-gray-800 font-semibold">
                       Nama Mahasiswa
                     </TableHead>
-                    <TableHead className="hidden sm:table-cell text-gray-800 font-semibold">
-                      Total Kursus
+                    <TableHead className="text-center text-gray-800 font-semibold">
+                      Total Course
                     </TableHead>
-                    <TableHead className="hidden sm:table-cell text-gray-800 font-semibold">
+                    <TableHead className="text-center text-gray-800 font-semibold">
                       Total Login
                     </TableHead>
-                    <TableHead className="text-right text-gray-800 font-semibold">
+                    <TableHead className="text-center text-gray-800 font-semibold">
                       Total Aktivitas
                     </TableHead>
-                    <TableHead className="text-right text-gray-800 font-semibold">
-                      Total Partisipasi
+                    <TableHead className="text-center text-gray-800 font-semibold">
+                      Aksi
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isRefreshing ? (
-                    [...Array(5)].map((_, i) => <SkeletonTableRow key={i} />)
-                  ) : !paginatedCourses || paginatedCourses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="p-0">
-                        <EmptyCoursesState />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    (paginatedCourses || []).map((course) => {
-                      const isExpanded = expandedCourses.has(course.course_id);
-                      const courseActivities =
-                        activitiesCache.get(course.course_id) || [];
-                      const isLoadingCourseActivities = loadingActivities.has(
-                        course.course_id
-                      );
+                  {paginatedStudents.map((student, index) => {
+                    const isExpanded = expandedStudents.has(student.user_id);
+                    const studentCourses =
+                      courseDataCache.get(student.user_id) || [];
+                    const isLoadingStudentCourses = loadingCourses.has(
+                      student.user_id
+                    );
 
-                      return (
-                        <React.Fragment key={course.course_id}>
-                          {/* Course Row with Enhanced Styling */}
-                          <TableRow
-                            className="cursor-pointer hover:bg-gray-100 border-b-2 border-gray-200 bg-gradient-to-r from-white to-gray-50"
-                            onClick={() => toggleCourse(course.course_id)}
-                          >
-                            <TableCell className="p-3 sm:p-4">
-                              <div className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full">
-                                {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-700" />
-                                ) : (
-                                  <ChevronRightIcon className="w-4 h-4 text-gray-700" />
-                                )}
+                    return (
+                      <React.Fragment key={student.id}>
+                        {/* Student Row with Drilldown */}
+                        <TableRow
+                          className="cursor-pointer hover:bg-gray-100 border-b-2 border-gray-200 bg-gradient-to-r from-white to-gray-50"
+                          onClick={() => toggleStudent(student.user_id)}
+                        >
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-700" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-700" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="space-y-2">
+                              <div className="font-semibold text-sm sm:text-lg leading-tight text-gray-800">
+                                {student.firstname} {student.lastname}
                               </div>
-                            </TableCell>
-                            <TableCell className="p-3 sm:p-4">
-                              <div className="space-y-2">
-                                <div className="font-semibold text-sm sm:text-lg leading-tight text-gray-800">
-                                  {course.course_name}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-gray-50 text-gray-700 border-gray-300 text-xs font-medium"
-                                  >
-                                    <GraduationCap className="w-3 h-3 mr-1" />
-                                    {course.kelas}
-                                  </Badge>
-                                  {/* Mobile: Show dosen here */}
-                                  <div className="sm:hidden text-xs text-gray-600 font-medium flex items-center gap-1">
-                                    <User className="w-3 h-3" />
-                                    {course.dosen_pengampu}
-                                  </div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                              <div className="space-y-2">
-                                <div className="font-medium text-gray-800">
-                                  {course.dosen_pengampu}
-                                </div>
+                              <div className="flex items-center gap-2">
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-50 text-blue-700 border-blue-200 shadow-sm"
+                                  className="bg-gray-50 text-gray-700 border-gray-300 text-xs font-medium"
                                 >
-                                  <BookOpen className="w-4 h-4 mr-1" />
-                                  Mata Kuliah
+                                  <User className="w-3 h-3 mr-1" />@
+                                  {student.username}
                                 </Badge>
                               </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-600">
+                                {student.total_course.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500 uppercase tracking-wide">
+                                Course
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-600">
+                                {student.total_login.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500 uppercase tracking-wide">
+                                Login
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-600">
+                                {student.total_activities.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500 uppercase tracking-wide">
+                                Aktivitas
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-3 sm:p-4">
+                            <div className="flex justify-center">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-gray-600" />
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Course Data Rows */}
+                        {isExpanded && isLoadingStudentCourses && (
+                          <TableRow
+                            key={`loading-courses-${student.user_id}`}
+                            className="bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300"
+                          >
+                            <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
+                              <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
                             </TableCell>
-                            <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                              <Badge
-                                variant="secondary"
-                                className="bg-green-100 text-green-700 border-green-200"
-                              >
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Aktif
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right p-3 sm:p-4">
-                              <div className="text-xs sm:text-sm space-y-2">
-                                <div className="flex items-center justify-end gap-2">
-                                  <div className="w-6 h-6 bg-orange-50 rounded-full flex items-center justify-center">
-                                    <Activity className="w-3 h-3 text-orange-600" />
-                                  </div>
-                                  <span className="font-semibold text-orange-700">
-                                    {course.jumlah_aktivitas} aktivitas
-                                  </span>
+                            <TableCell colSpan={5} className="text-center py-8">
+                              <div className="flex items-center justify-center gap-3">
+                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                  <RefreshCw className="w-4 h-4 animate-spin text-gray-600" />
                                 </div>
-                                <div className="flex items-center justify-end gap-2">
-                                  <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
-                                    <Users className="w-3 h-3 text-blue-600" />
-                                  </div>
-                                  <span className="text-gray-600">
-                                    {course.jumlah_mahasiswa} mahasiswa
-                                  </span>
-                                </div>
-                                {/* Mobile: Show status here */}
-                                <div className="sm:hidden mt-2 flex justify-end">
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs bg-green-100 text-green-700 border-green-200"
-                                  >
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Aktif
-                                  </Badge>
-                                </div>
+                                <span className="text-sm text-gray-700 font-medium">
+                                  Loading course data...
+                                </span>
                               </div>
                             </TableCell>
                           </TableRow>
-
-                          {/* Activities Rows */}
-                          {isExpanded && isLoadingCourseActivities && (
+                        )}
+                        {isExpanded &&
+                          !isLoadingStudentCourses &&
+                          studentCourses.length === 0 && (
                             <TableRow
-                              key={`loading-activities-${course.course_id}`}
+                              key={`empty-courses-${student.user_id}`}
                               className="bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300"
                             >
                               <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
-                                <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+                                <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
                               </TableCell>
-                              <TableCell
-                                colSpan={4}
-                                className="text-center py-8"
-                              >
-                                <div className="flex items-center justify-center gap-3">
-                                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                    <RefreshCw className="w-4 h-4 animate-spin text-gray-600" />
-                                  </div>
-                                  <span className="text-sm text-gray-700 font-medium">
-                                    Loading activities...
-                                  </span>
+                              <TableCell colSpan={5} className="p-0">
+                                <div className="py-6 px-4">
+                                  <EmptyCourseState />
                                 </div>
                               </TableCell>
                             </TableRow>
                           )}
-                          {isExpanded &&
-                            !isLoadingCourseActivities &&
-                            courseActivities.length === 0 && (
-                              <TableRow
-                                key={`empty-activities-${course.course_id}`}
-                                className="bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300"
-                              >
-                                <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
-                                  <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-                                </TableCell>
-                                <TableCell colSpan={4} className="p-0">
-                                  <div className="py-6 px-4">
-                                    <EmptyActivitiesState />
+                        {isExpanded &&
+                          !isLoadingStudentCourses &&
+                          studentCourses.length > 0 &&
+                          studentCourses.map((course, courseIndex) => (
+                            <TableRow
+                              key={`${student.user_id}-${course.course_id}-${courseIndex}`}
+                              className="hover:bg-gray-100 bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300"
+                            >
+                              <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
+                                <div className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full p-1">
+                                  <BookOpen className="w-3 h-3 text-gray-600" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sm:p-4">
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 border-0 text-xs font-medium shadow-sm">
+                                      <BookOpen className="w-3 h-3 mr-1" />
+                                      Course
+                                    </Badge>
                                   </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          {isExpanded &&
-                            !isLoadingCourseActivities &&
-                            courseActivities.length > 0 &&
-                            courseActivities.map((activity, activityIndex) => {
-                              return (
-                                <React.Fragment
-                                  key={`${course.course_name}-${course.course_id}-${activityIndex}`}
-                                >
-                                  {/* Activity Row with Enhanced Visual Hierarchy */}
-                                  <TableRow className="hover:bg-gray-100 bg-gradient-to-r from-gray-50 to-transparent border-l-4 border-l-gray-300">
-                                    <TableCell className="pl-8 sm:pl-12 p-3 sm:p-4">
-                                      {/* <div className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full p-1">
-                                      <div className="text-gray-600">
-                                        {getActivityIcon(activity.activity_type)}
+                                  <div className="pl-2 border-l-2 border-gray-300">
+                                    <div className="font-semibold text-sm leading-tight text-gray-800">
+                                      {course.course_name}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1 font-medium flex items-center gap-1">
+                                      <GraduationCap className="w-3 h-3" />
+                                      Mata Kuliah
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sm:p-4">
+                                <div className="text-center">
+                                  <div className="text-lg font-semibold text-green-600">
+                                    {course.total_modules?.toLocaleString() ||
+                                      "0"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Total Modules
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sm:p-4">
+                                <div className="text-center">
+                                  <div className="text-lg font-semibold text-orange-600">
+                                    {course.total_logs?.toLocaleString() || "0"}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Total Logs
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sm:p-4">
+                                <div className="text-center space-y-3">
+                                  <div className="space-y-2">
+                                    <div className="flex flex-wrap gap-2 justify-center">
+                                      <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 rounded-full text-purple-700 text-xs font-medium">
+                                        <Star className="w-3 h-3" />
+                                        {course.highest_grade || "N/A"}
                                       </div>
-                                    </div> */}
-                                    </TableCell>
-                                    <TableCell className="p-3 sm:p-4">
-                                      <div className="space-y-3">
-                                        {/* Enhanced Activity Type Badge */}
-                                        <div className="flex items-center gap-2">
-                                          <Badge
-                                            className={`${getActivityColor(
-                                              activity.activity_type
-                                            )} border-0 text-xs font-medium shadow-sm`}
-                                          >
-                                            {getActivityIcon(
-                                              activity.activity_type
-                                            )}
-                                            <span className="ml-1 capitalize">
-                                              {activity.activity_type}
-                                            </span>
-                                          </Badge>
-                                          {/* Section Badge */}
-                                          <Badge
-                                            variant="outline"
-                                            className="bg-gray-50 text-gray-700 border-gray-300 text-xs font-medium"
-                                          >
-                                            <Hash className="w-3 h-3 mr-1" />
-                                            Section {activity.section}
-                                          </Badge>
-                                        </div>
-                                        {/* Activity Name with Enhanced Typography */}
-                                        <div className="pl-2 border-l-2 border-gray-300">
-                                          <div className="font-semibold text-sm leading-tight text-gray-800">
-                                            {activity.activity_name}
-                                          </div>
-                                          <div className="text-xs text-gray-600 mt-1 font-medium flex items-center gap-1">
-                                            <Activity className="w-3 h-3" />
-                                            Aktivitas Pembelajaran
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                                      <Badge
-                                        variant="outline"
-                                        className="bg-orange-50 text-orange-700 border-orange-200 shadow-sm"
-                                      >
-                                        <ClipboardList className="w-3 h-3 mr-1" />
-                                        Aktivitas
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell p-3 sm:p-4">
-                                      <div className="flex items-center gap-2 text-sm">
-                                        <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                                          <Eye className="w-4 h-4 text-blue-600" />
-                                        </div>
-                                        <div className="text-blue-700 font-medium">
-                                          {activity.accessed_count} akses
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-right p-3 sm:p-4">
-                                      <div className="space-y-3">
-                                        {/* Enhanced Stats Display */}
-                                        <div className="text-xs sm:text-sm space-y-2">
-                                          {/* Mobile: Show access count here */}
-                                          <div className="sm:hidden flex items-center justify-end gap-2 text-xs text-gray-600 mb-2">
-                                            <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
-                                              <Eye className="w-3 h-3 text-blue-600" />
-                                            </div>
-                                            <span className="text-blue-700 font-medium">
-                                              {activity.accessed_count} akses
-                                            </span>
-                                          </div>
-                                          {/* Enhanced Activity Stats */}
-                                          <div className="flex flex-wrap gap-2 justify-end">
-                                            {activity.submission_count && (
-                                              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-700 text-xs font-medium">
-                                                <CheckCircle className="w-3 h-3" />
-                                                {activity.submission_count}{" "}
-                                                submit
-                                              </div>
-                                            )}
-                                            {activity.attempted_count && (
-                                              <div className="flex items-center gap-1 px-2 py-1 bg-orange-50 rounded-full text-orange-700 text-xs font-medium">
-                                                <ClipboardList className="w-3 h-3" />
-                                                {activity.attempted_count}{" "}
-                                                attempt
-                                              </div>
-                                            )}
-                                            {activity.graded_count && (
-                                              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full text-green-700 text-xs font-medium">
-                                                <Star className="w-3 h-3" />
-                                                {activity.graded_count} graded
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                        {/* Enhanced Detail Button */}
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-8 px-4 text-xs w-full sm:w-auto bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 shadow-sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(
-                                              `/activity-detail/${course.course_id}/${activity.activity_type}/${activity.activity_id}`,
-                                              "_blank"
-                                            );
-                                          }}
-                                        >
-                                          <Eye className="w-3 h-3 mr-2" />
-                                          <span className="hidden sm:inline">
-                                            Lihat Detail
-                                          </span>
-                                          <span className="sm:hidden">
-                                            Detail
-                                          </span>
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                </React.Fragment>
-                              );
-                            })}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-gray-600">
+                                    Last:{" "}
+                                    {course.last_updated
+                                      ? new Date(
+                                          course.last_updated
+                                        ).toLocaleDateString("id-ID", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                        })
+                                      : "N/A"}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sm:p-4">
+                                {/* Action Button for Course */}
+                                <div className="flex justify-center mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open("#", "_blank");
+                                    }}
+                                    className="h-7 px-3 text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800 transition-all duration-200"
+                                  >
+                                    <Eye className="w-3 h-4 mr-1" />
+                                    Detail
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
+          )}
+        </CardContent>
 
-            <div className="p-4 border-t">
-              <PaginationControls />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Pagination Controls */}
+        {studentData.length > 0 && (
+          <div className="p-4 border-t">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-700 font-medium">
+                  Tampilkan:
+                </span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={async (value) => {
+                    const newLimit = Number(value);
 
-        {/* ETL Status Info - Moved below table */}
-        {etlStatus && etlStatus.status && etlStatus.status.lastRun && (
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                <Clock className="w-4 h-4 text-gray-600" />
+                    // Prevent multiple simultaneous calls
+                    if (isRefreshing) return;
+
+                    setLimit(newLimit);
+                    setCurrentPage(1);
+
+                    // Reload data with new limit
+                    if (newLimit !== 5 && isInitialLoadComplete) {
+                      setError(null);
+                      setIsRefreshing(true);
+                      try {
+                        const data = await loadStudentData(
+                          1,
+                          newLimit,
+                          search,
+                          sortBy,
+                          sortOrder
+                        );
+                        setStudentData(data.data);
+                      } catch (error) {
+                        setError(
+                          error instanceof Error
+                            ? error.message
+                            : "Failed to load data"
+                        );
+                      } finally {
+                        setIsRefreshing(false);
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-20 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-600">per halaman</span>
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-700">
-                  Last running Updated:{" "}
-                  {etlStatus.status.lastRun.end_date ? (
-                    <ClientDate
-                      dateString={etlStatus.status.lastRun.end_date}
-                      formatOptions={{
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }}
-                    />
-                  ) : (
-                    "No data available"
-                  )}
+
+              {/* Pagination info */}
+              <div className="text-sm text-gray-700 font-medium">
+                Menampilkan {(currentPage - 1) * limit + 1} -{" "}
+                {Math.min(currentPage * limit, studentData.length)} dari{" "}
+                {studentData.length} mahasiswa
+              </div>
+
+              {/* Pagination controls */}
+              {Math.ceil(studentData.length / limit) > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage <= 1}
+                    className="px-3 py-2 bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-700 px-3 py-2">
+                    {currentPage} / {Math.ceil(studentData.length / limit)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(
+                          Math.ceil(studentData.length / limit),
+                          prev + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      currentPage >= Math.ceil(studentData.length / limit)
+                    }
+                    className="px-3 py-2 bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-800"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-                <div className="text-xs text-gray-500">
-                  ETL Status: {etlStatus.status.status || "Unknown"} •{" "}
-                  {etlStatus.status.isRunning ? "Running" : "Stopped"}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Status Indicator */}
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    etlStatus.status.lastRun.status === "finished"
-                      ? "bg-green-500"
-                      : etlStatus.status.lastRun.status === "inprogress"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
-                ></div>
-              </div>
+              )}
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -110,4 +110,10 @@ export const API_ENDPOINTS = {
     DETAILED: "/api/v1/health/detailed",
     BASIC: "/api/v1/health",
   },
+  SP: {
+    ETL: {
+      SUMMARIES: "/api/v1/sp-etl/summaries",
+      SUMMARIES_DETAIL: "/api/v1/sp-etl/user-all-course",
+    },
+  },
 } as const;
