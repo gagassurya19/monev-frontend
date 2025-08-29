@@ -45,6 +45,7 @@ export default function AdminETLSASPage() {
     const monevAttemptsRef = useRef<number>(0);
 
     const [startDate, setStartDate] = useState('2025-02-03');
+    const [endDate, setEndDate] = useState('2025-02-07');
     const [concurrency, setConcurrency] = useState(4);
 
     // CeLOE SAS state
@@ -116,7 +117,7 @@ export default function AdminETLSASPage() {
         celoeAttemptsRef.current = 0;
         monevAttemptsRef.current = 0;
         try {
-            const resp: any = await apiClient.post(API_ENDPOINTS.SAS.ETL_MONEV.ORCHESTRATE, { start_date: startDate, concurrency });
+            const resp: any = await apiClient.post(API_ENDPOINTS.SAS.ETL_MONEV.ORCHESTRATE, { start_date: startDate, end_date: endDate, concurrency });
             if (resp && resp.success === false) {
                 setOrchestratorError(resp.error || resp.message || 'Orchestration failed');
                 setOrchestratorSteps(resp.steps || null);
@@ -343,24 +344,28 @@ export default function AdminETLSASPage() {
                             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         </div>
                         <div>
+                            <label className="text-sm font-medium text-gray-700">End Date</label>
+                            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                        </div>
+                        <div>
                             <label className="text-sm font-medium text-gray-700">Concurrency</label>
                             <Input type="number" min={1} max={10} value={concurrency} onChange={(e) => setConcurrency(Number(e.target.value))} />
                         </div>
-                        <div className="flex items-end gap-2">
-                            <Button onClick={runAll} disabled={isRunningAll} className="h-10 flex-1">
-                                {isRunningAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                                Run All (CeLOE → Monev)
-                            </Button>
-                            <Button 
-                                onClick={stopPipeline} 
-                                disabled={isStopping || step === 'idle'} 
-                                variant="destructive" 
-                                className="h-10 px-4"
-                            >
-                                {isStopping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Square className="w-4 h-4 mr-2" />}
-                                Stop
-                            </Button>
-                        </div>
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <Button onClick={runAll} disabled={isRunningAll} className="h-10 flex-1">
+                            {isRunningAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                            Run All (CeLOE → Monev)
+                        </Button>
+                        <Button 
+                            onClick={stopPipeline} 
+                            disabled={isStopping || step === 'idle'} 
+                            variant="destructive" 
+                            className="h-10 px-4"
+                        >
+                            {isStopping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Square className="w-4 h-4 mr-2" />}
+                            Stop
+                        </Button>
                     </div>
                     <div className="text-sm text-gray-600">
                         {step === 'idle' && 'Idle'}
