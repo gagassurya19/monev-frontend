@@ -16,6 +16,7 @@ import {
     RefreshCw,
     FileText,
     Clock,
+    Square,
 } from 'lucide-react';
 import FetchCategorySubject from '@/components/admin/fetch/fetch-category-subject';
 import { Button } from '@/components/ui/button';
@@ -35,13 +36,15 @@ export default function AdminETLSASPage() {
     const [orchestratorError, setOrchestratorError] = useState<string | null>(null);
     const [orchestratorSteps, setOrchestratorSteps] = useState<any[] | null>(null);
     const [orchestratorInfo, setOrchestratorInfo] = useState<{ message: string; orchestrationId: string | null; steps?: any[] } | null>(null);
+    const [stopResult, setStopResult] = useState<{ message: string; stoppedCount: number; stoppedProcesses?: any[] } | null>(null);
+    const [isStopping, setIsStopping] = useState(false);
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isAutoRefreshingRef = useRef<boolean>(false);
     const celoeAttemptsRef = useRef<number>(0);
     const monevAttemptsRef = useRef<number>(0);
 
-    const [startDate, setStartDate] = useState('2024-01-01');
+    const [startDate, setStartDate] = useState('2025-02-03');
     const [concurrency, setConcurrency] = useState(4);
 
     // CeLOE SAS state
@@ -161,6 +164,41 @@ export default function AdminETLSASPage() {
         } finally { setIsRunningAll(false); }
     };
 
+    const stopPipeline = async () => {
+        if (isStopping) return;
+        setIsStopping(true);
+        setStopResult(null);
+        try {
+            const response: any = await apiClient.post(API_ENDPOINTS.SAS.ETL_CELOEAPI.STOP_PIPELINE);
+            
+            if (response.status === true) {
+                setStopResult({
+                    message: response.message,
+                    stoppedCount: response.stopped_count,
+                    stoppedProcesses: response.stopped_processes
+                });
+                
+                // Reset state after stopping
+                setStep('idle');
+                setOrchestratorError(null);
+                setOrchestratorSteps(null);
+                setOrchestratorInfo(null);
+                stopPolling();
+                stopAutoRefresh();
+                
+                // Refresh status
+                await Promise.all([fetchCeloeStatus(), fetchMonevStatus()]);
+            } else {
+                setOrchestratorError(response.message || 'Failed to stop pipeline');
+            }
+        } catch (e: any) {
+            console.error('Failed to stop pipeline:', e);
+            setOrchestratorError(e?.message || 'Failed to stop pipeline');
+        } finally {
+            setIsStopping(false);
+        }
+    };
+
     // Check if user is admin
     if (!isAuthenticated || !user?.admin) {
         return (
@@ -272,6 +310,33 @@ export default function AdminETLSASPage() {
                             </AlertDescription>
                         </Alert>
                     )}
+                    {stopResult && (
+                        <Alert className="mb-4">
+                            <AlertTitle>Pipeline Stopped</AlertTitle>
+                            <AlertDescription>
+                                <div className="space-y-2">
+                                    <div className="text-sm">{stopResult.message}</div>
+                                    <div className="text-xs text-gray-700">
+                                        Stopped Count: {stopResult.stoppedCount}
+                                        {stopResult.stoppedProcesses && stopResult.stoppedProcesses.length > 0 && (
+                                            <div className="mt-2">
+                                                Stopped Processes:
+                                                <ul className="list-disc pl-5">
+                                                    {stopResult.stoppedProcesses.map((process: any, idx: number) => (
+                                                        <li key={idx}>
+                                                            Log ID: {process.log_id} | 
+                                                            Started: {process.start_time} | 
+                                                            Stopped: {process.stopped_at}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                             <label className="text-sm font-medium text-gray-700">Start Date</label>
@@ -281,10 +346,19 @@ export default function AdminETLSASPage() {
                             <label className="text-sm font-medium text-gray-700">Concurrency</label>
                             <Input type="number" min={1} max={10} value={concurrency} onChange={(e) => setConcurrency(Number(e.target.value))} />
                         </div>
-                        <div className="flex items-end">
-                            <Button onClick={runAll} disabled={isRunningAll} className="h-10 w-full">
+                        <div className="flex items-end gap-2">
+                            <Button onClick={runAll} disabled={isRunningAll} className="h-10 flex-1">
                                 {isRunningAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                                 Run All (CeLOE → Monev)
+                            </Button>
+                            <Button 
+                                onClick={stopPipeline} 
+                                disabled={isStopping || step === 'idle'} 
+                                variant="destructive" 
+                                className="h-10 px-4"
+                            >
+                                {isStopping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Square className="w-4 h-4 mr-2" />}
+                                Stop
                             </Button>
                         </div>
                     </div>

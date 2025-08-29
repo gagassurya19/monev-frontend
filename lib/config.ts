@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
       STATUS: '/api/v1/celoeapi/cp/etl/status',
       LOGS: '/api/v1/celoeapi/cp/etl/logs',
       RUN: '/api/v1/celoeapi/cp/etl/run',
+      STOP_PIPELINE: '/api/v1/celoeapi/cp/etl/stop_pipeline',
       CLEAN: '/api/v1/celoeapi/cp/etl/clean',
     },
     ETL_MONEV: {
@@ -73,6 +74,7 @@ export const API_ENDPOINTS = {
     ETL_CELOEAPI: {
       STATUS: '/api/v1/celoeapi/sas/etl/status',
       RUN: '/api/v1/celoeapi/sas/etl/run',
+      STOP_PIPELINE: '/api/v1/celoeapi/sas/etl/stop_pipeline',
       CLEAN: '/api/v1/celoeapi/sas/etl/clean',
       LOGS: '/api/v1/celoeapi/sas/etl/logs',
       EXPORT: '/api/v1/celoeapi/sas/etl/export',

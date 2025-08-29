@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Play, RefreshCw, FileText, Clock } from 'lucide-react';
+import { Loader2, Play, RefreshCw, FileText, Clock, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/config';
@@ -30,6 +30,8 @@ export default function AdminETLCPPage() {
     const [orchestratorSteps, setOrchestratorSteps] = useState<any[] | null>(null);
     const [orchestrationId, setOrchestrationId] = useState<string | null>(null);
     const [orchestratorInfo, setOrchestratorInfo] = useState<{ message: string; orchestrationId: string | null; steps?: any[] } | null>(null);
+    const [stopResult, setStopResult] = useState<{ message: string; stoppedCount: number; stoppedProcesses?: any[] } | null>(null);
+    const [isStopping, setIsStopping] = useState(false);
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isAutoRefreshingRef = useRef<boolean>(false);
@@ -37,7 +39,7 @@ export default function AdminETLCPPage() {
     const monevAttemptsRef = useRef<number>(0);
 
     // Unified controls
-    const [startDate, setStartDate] = useState('2024-01-01');
+    const [startDate, setStartDate] = useState('2025-02-03');
     const [concurrency, setConcurrency] = useState(4);
 
     // CeLOE state
@@ -137,6 +139,42 @@ export default function AdminETLCPPage() {
             await sleep(5000);
         }
         throw new Error('Monev ETL timeout');
+    };
+
+    const stopPipeline = async () => {
+        if (isStopping) return;
+        setIsStopping(true);
+        setStopResult(null);
+        try {
+            const response: any = await apiClient.post(API_ENDPOINTS.CP.ETL.STOP_PIPELINE);
+            
+            if (response.status === true) {
+                setStopResult({
+                    message: response.message,
+                    stoppedCount: response.stopped_count,
+                    stoppedProcesses: response.stopped_processes
+                });
+                
+                // Reset state after stopping
+                setStep('idle');
+                setOrchestratorError(null);
+                setOrchestratorSteps(null);
+                setOrchestrationId(null);
+                setOrchestratorInfo(null);
+                stopPolling();
+                stopAutoRefresh();
+                
+                // Refresh status
+                await Promise.all([fetchCeloeStatus(), fetchMonevStatus()]);
+            } else {
+                setOrchestratorError(response.message || 'Failed to stop pipeline');
+            }
+        } catch (e: any) {
+            console.error('Failed to stop pipeline:', e);
+            setOrchestratorError(e?.message || 'Failed to stop pipeline');
+        } finally {
+            setIsStopping(false);
+        }
     };
 
     const stopPolling = () => {
@@ -405,6 +443,33 @@ export default function AdminETLCPPage() {
                             </AlertDescription>
                         </Alert>
                     )}
+                    {stopResult && (
+                        <Alert className="mb-4">
+                            <AlertTitle>Pipeline Stopped</AlertTitle>
+                            <AlertDescription>
+                                <div className="space-y-2">
+                                    <div className="text-sm">{stopResult.message}</div>
+                                    <div className="text-xs text-gray-700">
+                                        Stopped Count: {stopResult.stoppedCount}
+                                        {stopResult.stoppedProcesses && stopResult.stoppedProcesses.length > 0 && (
+                                            <div className="mt-2">
+                                                Stopped Processes:
+                                                <ul className="list-disc pl-5">
+                                                    {stopResult.stoppedProcesses.map((process: any, idx: number) => (
+                                                        <li key={idx}>
+                                                            Log ID: {process.log_id} | 
+                                                            Started: {process.start_time} | 
+                                                            Stopped: {process.stopped_at}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                             <label className="text-sm font-medium text-gray-700">Start Date</label>
@@ -414,10 +479,19 @@ export default function AdminETLCPPage() {
                             <label className="text-sm font-medium text-gray-700">Concurrency</label>
                             <Input type="number" min={1} max={10} value={concurrency} onChange={(e) => setConcurrency(Number(e.target.value))} />
                         </div>
-                        <div className="flex items-end">
-                            <Button onClick={runAll} disabled={isRunningAll} className="h-10 w-full">
+                        <div className="flex items-end gap-2">
+                            <Button onClick={runAll} disabled={isRunningAll} className="h-10 flex-1">
                                 {isRunningAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                                 Run All (CeLOE → Monev)
+                            </Button>
+                            <Button 
+                                onClick={stopPipeline} 
+                                disabled={isStopping || step === 'idle'} 
+                                variant="destructive" 
+                                className="h-10 px-4"
+                            >
+                                {isStopping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Square className="w-4 h-4 mr-2" />}
+                                Stop
                             </Button>
                         </div>
                     </div>

@@ -200,7 +200,7 @@ export default function EtlSasCeloeapiPage() {
   const [lastClean, setLastClean] = useState<CeloeapiSasEtlCleanResponse | null>(null);
   
   // ETL Run Parameters
-  const [startDate, setStartDate] = useState('2024-01-01');
+  const [startDate, setStartDate] = useState('2025-02-03');
   const [concurrency, setConcurrency] = useState(4);
 
   // Logs
