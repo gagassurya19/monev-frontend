@@ -114,6 +114,8 @@ export const API_ENDPOINTS = {
     ETL: {
       SUMMARIES: "/api/v1/sp-etl/summaries",
       SUMMARIES_DETAIL: "/api/v1/sp-etl/user-all-course",
+      MODULE_TYPE_SUMMARY: "/api/v1/sp-etl/module-type-summary",
+      DETAIL: "/api/v1/sp-etl/details",
     },
   },
 } as const;

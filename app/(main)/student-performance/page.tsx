@@ -61,6 +61,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 
 const loadStudentData = async (
   page: number = 1,
@@ -218,6 +219,7 @@ const EmptyCourseState = () => (
 
 export default function StudentPerformance() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
 
   // state payload get summary
   const [currentPage, setCurrentPage] = useState(1);
@@ -793,7 +795,9 @@ export default function StudentPerformance() {
                                     variant="outline"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      window.open("#", "_blank");
+                                      router.push(
+                                        `/student-performance-detail/${student.user_id}/${course.course_id}`
+                                      );
                                     }}
                                     className="h-7 px-3 text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800 transition-all duration-200"
                                   >
