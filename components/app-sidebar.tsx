@@ -61,6 +61,11 @@ const data = {
       url: "/student-performance",
       icon: Users,
     },
+    {
+      title: "Teacher Performance",
+      url: "/teacher-performance",
+      icon: Users,
+    },
   ],
 };
 

@@ -118,4 +118,12 @@ export const API_ENDPOINTS = {
       DETAIL: "/api/v1/sp-etl/details",
     },
   },
+  TP: {
+    ETL: {
+      SUMMARIES: "/api/v1/tp-etl/summary",
+      USER_COURSES: "/api/v1/tp-etl/user-courses",
+      DETAIL: "/api/v1/tp-etl/detail",
+      DETAIL_SUMMARY: "/api/v1/tp-etl/detail/user/{user_id}/course/{course_id}",
+    },
+  },
 } as const;
