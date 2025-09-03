@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_ENDPOINTS, API_CONFIG } from '@/lib/config';
 import {
   Select,
   SelectContent,
@@ -11,16 +12,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getFakultas, getProdi, getMatkul } from '@/lib/api/activity';
-import { FilterOption, MatkulFilterOption } from '@/lib/types';
+import { getCoursesList } from '@/lib/api/final-grade';
+import { FilterOption, MatkulFilterOption, FinalGradeCourse } from '@/lib/types';
 
 interface FilterDropdownProps {
-  type: 'fakultas' | 'prodi' | 'matkul';
+  type: 'fakultas' | 'prodi' | 'matkul' | 'course';
   value: string;
   onValueChange: (value: string, displayName?: string) => void;
   placeholder: string;
   disabled?: boolean;
   fakultasId?: string;
   prodiId?: string;
+  matkulId?: string;
   kampus?: string;
 }
 
@@ -32,11 +35,12 @@ export function FilterDropdown({
   disabled = false,
   fakultasId,
   prodiId,
-  kampus = 'bdg'
+  matkulId,
+  kampus = 'bdg',
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [items, setItems] = useState<(FilterOption | MatkulFilterOption)[]>([]);
+  const [items, setItems] = useState<(FilterOption | MatkulFilterOption | FinalGradeCourse)[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -48,7 +52,7 @@ export function FilterDropdown({
     setLoading(true);
     try {
       let response;
-      
+
       if (type === 'fakultas') {
         response = await getFakultas(search, pageNum, 20);
       } else if (type === 'prodi') {
@@ -57,24 +61,35 @@ export function FilterDropdown({
       } else if (type === 'matkul') {
         if (!prodiId) return;
         response = await getMatkul(prodiId, search, pageNum, 20);
+      } else if (type === 'course') {
+        if (!prodiId || !kampus) {
+          console.warn('prodiId or kampus is missing for course filter');
+          setItems([]);
+          return;
+        }
+        console.log(`Fetching courses for prodiId=${prodiId}, kampus=${kampus} from ${API_CONFIG.BASE_URL}${API_ENDPOINTS.CP.COURSES}`);
+        response = await getCoursesList(prodiId, kampus);
       }
 
       if (response) {
         const newItems = response.data;
-        if (append) {
-          setItems(prev => [...prev, ...newItems]);
+        if (append && type !== 'course') {
+          setItems((prev) => [...prev, ...newItems]);
         } else {
           setItems(newItems);
         }
-        setHasMore(response.hasNextPage);
+        setHasMore(type !== 'course' && ('hasNextPage' in response ? response.hasNextPage : false));
         setPage(pageNum);
+      } else {
+        setItems([]);
       }
-    } catch (error) {
-      console.error(`Error fetching ${type}:`, error);
+    } catch (error: any) {
+      console.error(`Error fetching ${type}:`, error.message, error.details);
+      setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [type, disabled, fakultasId, prodiId, kampus]);
+  }, [type, disabled, fakultasId, prodiId, matkulId, kampus]);
 
   // Initial load
   useEffect(() => {
@@ -85,6 +100,7 @@ export function FilterDropdown({
 
   // Handle search with debounce
   useEffect(() => {
+    if (type === 'course') return; // Nonaktifkan search untuk course
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
@@ -98,14 +114,18 @@ export function FilterDropdown({
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [searchTerm, fetchItems]);
+  }, [searchTerm, fetchItems, type]);
 
-  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasMore && !loading) {
-      fetchItems(searchTerm, page + 1, true);
-    }
-  }, [fetchItems, searchTerm, page, hasMore, loading]);
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      if (type === 'course') return; // Nonaktifkan pagination untuk course
+      const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+      if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasMore && !loading) {
+        fetchItems(searchTerm, page + 1, true);
+      }
+    },
+    [fetchItems, searchTerm, page, hasMore, loading, type]
+  );
 
   const handleSelect = (selectedValue: string) => {
     const selectedItem = items.find(item => getItemValue(item) === selectedValue);
@@ -114,17 +134,23 @@ export function FilterDropdown({
     setIsOpen(false);
   };
 
-  const getDisplayValue = (item: FilterOption | MatkulFilterOption) => {
+  const getDisplayValue = (item: FilterOption | MatkulFilterOption | FinalGradeCourse) => {
     if (type === 'matkul') {
       const matkulItem = item as MatkulFilterOption;
       return `${matkulItem.subject_code} - ${matkulItem.subject_name}`;
+    } else if (type === 'course') {
+      const courseItem = item as FinalGradeCourse;
+      // Gunakan course_name dari tabel, opsional tambahkan shortname jika ada
+      return courseItem.name || courseItem.id; // Pastikan courseItem.name sesuai dengan course_name
     }
     return (item as FilterOption).category_name;
   };
 
-  const getItemValue = (item: FilterOption | MatkulFilterOption) => {
+  const getItemValue = (item: FilterOption | MatkulFilterOption | FinalGradeCourse) => {
     if (type === 'matkul') {
       return (item as MatkulFilterOption).subject_id.toString();
+    } else if (type === 'course') {
+      return (item as FinalGradeCourse).id.toString(); // Pastikan id merujuk ke course_id
     }
     return (item as FilterOption).category_id.toString();
   };
@@ -151,6 +177,7 @@ export function FilterDropdown({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
+                disabled={type === 'course'} // Nonaktifkan search untuk course
               />
             </div>
           </div>
@@ -186,4 +213,4 @@ export function FilterDropdown({
       </Select>
     </div>
   );
-} 
+}
