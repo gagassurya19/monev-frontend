@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_ENDPOINTS, API_CONFIG } from '@/lib/config';
 import {
   Select,
   SelectContent,
@@ -35,7 +36,7 @@ export function FilterDropdown({
   fakultasId,
   prodiId,
   matkulId,
-  kampus = 'bdg'
+  kampus = 'bdg',
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +52,7 @@ export function FilterDropdown({
     setLoading(true);
     try {
       let response;
-      
+
       if (type === 'fakultas') {
         response = await getFakultas(search, pageNum, 20);
       } else if (type === 'prodi') {
@@ -61,29 +62,34 @@ export function FilterDropdown({
         if (!prodiId) return;
         response = await getMatkul(prodiId, search, pageNum, 20);
       } else if (type === 'course') {
-        if (!prodiId) { return; }
-        response = await getCoursesList(prodiId, kampus); // Hanya prodiId dan kampus
+        if (!prodiId || !kampus) {
+          console.warn('prodiId or kampus is missing for course filter');
+          setItems([]);
+          return;
+        }
+        console.log(`Fetching courses for prodiId=${prodiId}, kampus=${kampus} from ${API_CONFIG.BASE_URL}${API_ENDPOINTS.CP.COURSES}`);
+        response = await getCoursesList(prodiId, kampus);
       }
 
       if (response) {
-          const newItems = response.data;
-          if (append && type !== 'course') {
-            setItems((prev) => [...prev, ...newItems]);
-          } else {
-            setItems(newItems);
-          }
-          setHasMore(
-            type !== 'course' && ('hasNextPage' in response ? response.hasNextPage : false));
-          setPage(pageNum);
+        const newItems = response.data;
+        if (append && type !== 'course') {
+          setItems((prev) => [...prev, ...newItems]);
+        } else {
+          setItems(newItems);
         }
-      } catch (error) {
-        console.error(`Error fetching ${type}:`, error);
-      } finally {
-        setLoading(false);
+        setHasMore(type !== 'course' && ('hasNextPage' in response ? response.hasNextPage : false));
+        setPage(pageNum);
+      } else {
+        setItems([]);
       }
-    },
-    [type, disabled, fakultasId, prodiId, matkulId, kampus]
-  );
+    } catch (error: any) {
+      console.error(`Error fetching ${type}:`, error.message, error.details);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [type, disabled, fakultasId, prodiId, matkulId, kampus]);
 
   // Initial load
   useEffect(() => {
@@ -94,7 +100,7 @@ export function FilterDropdown({
 
   // Handle search with debounce
   useEffect(() => {
-    if (type === 'course') return;
+    if (type === 'course') return; // Nonaktifkan search untuk course
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
@@ -112,7 +118,7 @@ export function FilterDropdown({
 
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
-      if (type === 'course') return; 
+      if (type === 'course') return; // Nonaktifkan pagination untuk course
       const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
       if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasMore && !loading) {
         fetchItems(searchTerm, page + 1, true);
@@ -134,7 +140,8 @@ export function FilterDropdown({
       return `${matkulItem.subject_code} - ${matkulItem.subject_name}`;
     } else if (type === 'course') {
       const courseItem = item as FinalGradeCourse;
-      return courseItem.name;
+      // Gunakan course_name dari tabel, opsional tambahkan shortname jika ada
+      return courseItem.name || courseItem.id; // Pastikan courseItem.name sesuai dengan course_name
     }
     return (item as FilterOption).category_name;
   };
@@ -143,7 +150,7 @@ export function FilterDropdown({
     if (type === 'matkul') {
       return (item as MatkulFilterOption).subject_id.toString();
     } else if (type === 'course') {
-      return (item as FinalGradeCourse).id.toString();
+      return (item as FinalGradeCourse).id.toString(); // Pastikan id merujuk ke course_id
     }
     return (item as FilterOption).category_id.toString();
   };
@@ -170,6 +177,7 @@ export function FilterDropdown({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
+                disabled={type === 'course'} // Nonaktifkan search untuk course
               />
             </div>
           </div>
@@ -205,4 +213,4 @@ export function FilterDropdown({
       </Select>
     </div>
   );
-} 
+}

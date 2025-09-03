@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { getFinalGradesData, getKampusList, getFacultiesList, getProdisList, getCoursesList } from "@/lib/api/final-grade";
@@ -20,8 +20,6 @@ interface AppliedFilters {
     fakultasId: string;
     prodi: string;
     prodiId: string;
-    matkul: string;
-    matkulId: string;
     course: string;
     courseId: string;
 }
@@ -85,9 +83,16 @@ const calculateBoxplotStats = (data: number[]) => {
 };
 
 const formatDataForChart = (apiData: FinalGradeData[]) => {
-    return apiData.map(item => ({
-        course_name: item.name,
-        ...calculateBoxplotStats(item.value),
+    // Gunakan courseId sebagai label dan grade sebagai data numerik
+    const gradesByCourse = apiData.reduce((acc, item) => {
+        if (!acc[item.courseId]) acc[item.courseId] = [];
+        acc[item.courseId].push(item.grade);
+        return acc;
+    }, {} as Record<string, number[]>);
+
+    return Object.entries(gradesByCourse).map(([courseId, grades]) => ({
+        course_name: courseId, // Gunakan courseId sebagai label
+        ...calculateBoxplotStats(grades),
     }));
 };
 
@@ -159,8 +164,6 @@ export default function FinalGradesPage() {
         fakultasId: "",
         prodi: "",
         prodiId: "",
-        matkul: "",
-        matkulId: "",
         course: "",
         courseId: "",
     });
@@ -169,8 +172,6 @@ export default function FinalGradesPage() {
     const [selectedFakultas, setSelectedFakultas] = useState("");
     const [selectedProdiId, setSelectedProdiId] = useState("");
     const [selectedProdi, setSelectedProdi] = useState("");
-    const [selectedMatkulId, setSelectedMatkulId] = useState("");
-    const [selectedMatkul, setSelectedMatkul] = useState("");
     const [selectedCourseId, setSelectedCourseId] = useState("");
     const [selectedCourse, setSelectedCourse] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -216,8 +217,6 @@ export default function FinalGradesPage() {
                     fakultasId: parsed.fakultasId && typeof parsed.fakultasId === 'string' ? parsed.fakultasId : "",
                     prodi: parsed.prodi && typeof parsed.prodi === 'string' ? parsed.prodi : "",
                     prodiId: parsed.prodiId && typeof parsed.prodiId === 'string' ? parsed.prodiId : "",
-                    matkul: parsed.matkul && typeof parsed.matkul === 'string' ? parsed.matkul : "",
-                    matkulId: parsed.matkulId && typeof parsed.matkulId === 'string' ? parsed.matkulId : "",
                     course: parsed.course && typeof parsed.course === 'string' ? parsed.course : "",
                     courseId: parsed.courseId && typeof parsed.courseId === 'string' ? parsed.courseId : "",
                 };
@@ -227,12 +226,9 @@ export default function FinalGradesPage() {
                 setSelectedFakultasId(newFilters.fakultasId);
                 setSelectedProdi(newFilters.prodi);
                 setSelectedProdiId(newFilters.prodiId);
-                setSelectedMatkul(newFilters.matkul);
-                setSelectedMatkulId(newFilters.matkulId);
                 setSelectedCourse(newFilters.course);
                 setSelectedCourseId(newFilters.courseId);
-                if (newFilters.courseId) setCurrentLevel(5);
-                else if (newFilters.matkulId) setCurrentLevel(4);
+                if (newFilters.courseId) setCurrentLevel(4);
                 else if (newFilters.prodiId) setCurrentLevel(3);
                 else if (newFilters.fakultasId) setCurrentLevel(2);
                 else setCurrentLevel(1);
@@ -245,8 +241,6 @@ export default function FinalGradesPage() {
                     fakultasId: "",
                     prodi: "",
                     prodiId: "",
-                    matkul: "",
-                    matkulId: "",
                     course: "",
                     courseId: "",
                 };
@@ -256,8 +250,6 @@ export default function FinalGradesPage() {
                 setSelectedFakultasId("");
                 setSelectedProdi("");
                 setSelectedProdiId("");
-                setSelectedMatkul("");
-                setSelectedMatkulId("");
                 setSelectedCourse("");
                 setSelectedCourseId("");
                 setCurrentLevel(1);
@@ -268,33 +260,33 @@ export default function FinalGradesPage() {
     useEffect(() => {
         const fetchKampus = async () => {
             try {
-                const token = JWTAuth.getStoredToken();
-                console.log('JWT Token:', token);
-                if (!token) {
-                    setError("Token autentikasi tidak ditemukan. Silakan login kembali.");
-                    setKampuses(kampusesStatic);
-                    return;
-                }
-                console.log('Fetching kampus list');
-                const response = await getKampusList();
-                console.log('Kampus response:', response);
-                if (Array.isArray(response.data)) {
-                    console.log('Setting kampuses:', response.data);
-                    setKampuses(response.data);
-                } else {
-                    console.error('Kampus data is not an array:', response.data);
-                    setKampuses(kampusesStatic);
-                }
-            } catch (err: any) {
-                console.error('Failed to fetch kampus:', err.message);
-                setError(`Gagal mengambil daftar kampus: ${err.message}`);
+            const token = JWTAuth.getStoredToken();
+            console.log('JWT Token:', token);
+            if (!token) {
+                setError("Token autentikasi tidak ditemukan. Silakan login kembali.");
                 setKampuses(kampusesStatic);
+                return;
+            }
+            console.log('Fetching kampus list');
+            const response = await getKampusList();
+            console.log('Kampus response:', response);
+            if (response.status && Array.isArray(response.data)) {
+                console.log('Setting kampuses:', response.data);
+                setKampuses(response.data);
+            } else {
+                console.error('Kampus data is not an array or request failed:', response.data, response.message);
+                setKampuses(kampusesStatic);
+            }
+            } catch (err: any) {
+            console.error('Failed to fetch kampus - Details:', err.message);
+            setError(`Gagal mengambil daftar kampus: ${err.message}`);
+            setKampuses(kampusesStatic);
             }
         };
         fetchKampus();
-    }, []);
+        }, []);
 
-    const handleKampusChange = (value: string) => {
+        const handleKampusChange = (value: string) => {
         const kampus = (Array.isArray(kampuses) ? kampuses.find(k => k.id === value) : undefined) || 
                       kampusesStatic.find(k => k.id === value);
         console.log('Selected kampus:', { value, kampus });
@@ -308,8 +300,6 @@ export default function FinalGradesPage() {
         setSelectedFakultasId("");
         setSelectedProdi("");
         setSelectedProdiId("");
-        setSelectedMatkul("");
-        setSelectedMatkulId("");
         setSelectedCourse("");
         setSelectedCourseId("");
         setCurrentLevel(1);
@@ -321,8 +311,6 @@ export default function FinalGradesPage() {
             fakultasId: "",
             prodi: "",
             prodiId: "",
-            matkul: "",
-            matkulId: "",
             course: "",
             courseId: "",
         };
@@ -337,8 +325,6 @@ export default function FinalGradesPage() {
         setSelectedFakultas(displayName || value);
         setSelectedProdi("");
         setSelectedProdiId("");
-        setSelectedMatkul("");
-        setSelectedMatkulId("");
         setSelectedCourse("");
         setSelectedCourseId("");
         setCurrentLevel(2);
@@ -350,8 +336,6 @@ export default function FinalGradesPage() {
             fakultasId: value,
             prodi: "",
             prodiId: "",
-            matkul: "",
-            matkulId: "",
             course: "",
             courseId: "",
         };
@@ -364,8 +348,6 @@ export default function FinalGradesPage() {
     const handleProdiChange = (value: string, displayName?: string) => {
         setSelectedProdiId(value);
         setSelectedProdi(displayName || value);
-        setSelectedMatkul("");
-        setSelectedMatkulId("");
         setSelectedCourse("");
         setSelectedCourseId("");
         setCurrentLevel(3);
@@ -377,8 +359,6 @@ export default function FinalGradesPage() {
             fakultasId: selectedFakultasId,
             prodi: displayName || value,
             prodiId: value,
-            matkul: "",
-            matkulId: "",
             course: "",
             courseId: "",
         };
@@ -388,11 +368,26 @@ export default function FinalGradesPage() {
         setHasApplied(true);
     };
 
-    const handleMatkulChange = (value: string, displayName?: string) => {
-        setSelectedMatkulId(value);
-        setSelectedMatkul(displayName || value);
-        setSelectedCourse("");
-        setSelectedCourseId("");
+    useEffect(() => {
+        const fetchCourses = async () => {
+            if (selectedProdiId && appliedFilters.kampusId) {
+                try {
+                    const response = await getCoursesList(selectedProdiId, appliedFilters.kampusId);
+                    if (response.status && Array.isArray(response.data)) {
+                        // Logika tambahan jika perlu
+                    }
+                } catch (err: any) {
+                    console.error('Failed to fetch courses:', err.message);
+                    setError(`Gagal mengambil daftar course: ${err.message}`);
+                }
+            }
+        };
+        fetchCourses();
+    }, [selectedProdiId, appliedFilters.kampusId]);
+
+    const handleCourseChange = (value: string, displayName?: string) => {
+        setSelectedCourseId(value);
+        setSelectedCourse(displayName || value);
         setCurrentLevel(4);
 
         const newFilters = {
@@ -402,31 +397,6 @@ export default function FinalGradesPage() {
             fakultasId: selectedFakultasId,
             prodi: selectedProdi,
             prodiId: selectedProdiId,
-            matkul: displayName || value,
-            matkulId: value,
-            course: "",
-            courseId: "",
-        };
-        console.log('New filters:', newFilters);
-        setAppliedFilters(newFilters);
-        localStorage.setItem('final-grade-filters', JSON.stringify(newFilters));
-        setHasApplied(true);
-    };
-
-    const handleCourseChange = (value: string, displayName?: string) => {
-        setSelectedCourseId(value);
-        setSelectedCourse(displayName || value);
-        setCurrentLevel(5);
-
-        const newFilters = {
-            kampus: selectedKampus,
-            kampusId: getKampusCode(selectedKampus),
-            fakultas: selectedFakultas,
-            fakultasId: selectedFakultasId,
-            prodi: selectedProdi,
-            prodiId: selectedProdiId,
-            matkul: selectedMatkul,
-            matkulId: selectedMatkulId,
             course: displayName || value,
             courseId: value,
         };
@@ -437,7 +407,7 @@ export default function FinalGradesPage() {
     };
 
     const handleAddNextLevel = () => {
-        if (currentLevel < 5) {
+        if (currentLevel < 4) {
             setCurrentLevel(currentLevel + 1);
         }
     };
@@ -449,49 +419,31 @@ export default function FinalGradesPage() {
             setSelectedFakultasId("");
             setSelectedProdi("");
             setSelectedProdiId("");
-            setSelectedMatkul("");
-            setSelectedMatkulId("");
             setSelectedCourse("");
             setSelectedCourseId("");
             newFilters.fakultas = "";
             newFilters.fakultasId = "";
             newFilters.prodi = "";
             newFilters.prodiId = "";
-            newFilters.matkul = "";
-            newFilters.matkulId = "";
             newFilters.course = "";
             newFilters.courseId = "";
             setCurrentLevel(1);
         } else if (levelToRemove === 3) {
             setSelectedProdi("");
             setSelectedProdiId("");
-            setSelectedMatkul("");
-            setSelectedMatkulId("");
             setSelectedCourse("");
             setSelectedCourseId("");
             newFilters.prodi = "";
             newFilters.prodiId = "";
-            newFilters.matkul = "";
-            newFilters.matkulId = "";
             newFilters.course = "";
             newFilters.courseId = "";
             setCurrentLevel(2);
         } else if (levelToRemove === 4) {
-            setSelectedMatkul("");
-            setSelectedMatkulId("");
             setSelectedCourse("");
             setSelectedCourseId("");
-            newFilters.matkul = "";
-            newFilters.matkulId = "";
             newFilters.course = "";
             newFilters.courseId = "";
             setCurrentLevel(3);
-        } else if (levelToRemove === 5) {
-            setSelectedCourse("");
-            setSelectedCourseId("");
-            newFilters.course = "";
-            newFilters.courseId = "";
-            setCurrentLevel(4);
         }
         console.log('New filters after remove:', newFilters);
         setAppliedFilters(newFilters);
@@ -507,8 +459,6 @@ export default function FinalGradesPage() {
             fakultasId: "",
             prodi: "",
             prodiId: "",
-            matkul: "",
-            matkulId: "",
             course: "",
             courseId: "",
         };
@@ -518,8 +468,6 @@ export default function FinalGradesPage() {
         setSelectedFakultasId("");
         setSelectedProdi("");
         setSelectedProdiId("");
-        setSelectedMatkul("");
-        setSelectedMatkulId("");
         setSelectedCourse("");
         setSelectedCourseId("");
         setAppliedFilters(newFilters);
@@ -529,19 +477,19 @@ export default function FinalGradesPage() {
     };
 
     const hasAdditionalFiltersApplied = () => {
-        return appliedFilters.fakultas || appliedFilters.prodi || appliedFilters.matkul || appliedFilters.course;
+        return appliedFilters.fakultas || appliedFilters.prodi || appliedFilters.course;
     };
 
     useEffect(() => {
         const fetchFinalGrades = async () => {
-            if (appliedFilters.courseId) { // Hanya ambil data jika courseId ada
+            if (appliedFilters.courseId) {
                 setIsLoading(true);
                 setError(null);
                 try {
                     console.log('Fetching final grades with courseId:', appliedFilters.courseId);
                     const response = await getFinalGradesData({ courseId: appliedFilters.courseId });
                     console.log('Final grades response:', response);
-                    if (Array.isArray(response.data)) {
+                    if (response.status && Array.isArray(response.data)) {
                         console.log('Setting rawData:', response.data);
                         setRawData(response.data);
                     } else {
@@ -742,7 +690,7 @@ export default function FinalGradesPage() {
                                         className="h-auto w-auto px-3 py-2 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 border"
                                     >
                                         <Plus className="h-3 w-3 mr-1" />
-                                        Add Mata Kuliah
+                                        Add Course
                                     </Button>
                                 )}
                             </div>
@@ -754,10 +702,10 @@ export default function FinalGradesPage() {
                                 <div className="flex items-center gap-2">
                                     <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
                                     <FilterDropdown
-                                        type="matkul"
-                                        value={selectedMatkulId}
-                                        onValueChange={handleMatkulChange}
-                                        placeholder="Pilih Mata Kuliah"
+                                        type="course"
+                                        value={selectedCourseId}
+                                        onValueChange={handleCourseChange}
+                                        placeholder="Pilih Course"
                                         prodiId={selectedProdiId}
                                         kampus={getKampusCode(selectedKampus)}
                                     />
@@ -766,43 +714,6 @@ export default function FinalGradesPage() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveLevel(4)}
-                                    className="h-8 w-8 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
-                                >
-                                    <X className="h-3 w-3" />
-                                </Button>
-                                {selectedMatkulId && currentLevel === 4 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleAddNextLevel}
-                                        className="h-auto w-auto px-3 py-2 ml-1 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 border"
-                                    >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        Add Course
-                                    </Button>
-                                )}
-                            </div>
-                        )}
-
-                        {currentLevel >= 5 && selectedProdiId && selectedMatkulId && (
-                            <div className="flex items-center gap-1">
-                                <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                                <div className="flex items-center gap-2">
-                                    <Book className="h-4 w-4 text-red-600" strokeWidth={2} />
-                                    <FilterDropdown
-                                        type="course"
-                                        value={selectedCourseId}
-                                        onValueChange={handleCourseChange}
-                                        placeholder="Pilih Course"
-                                        prodiId={selectedProdiId}
-                                        matkulId={selectedMatkulId}
-                                        kampus={getKampusCode(selectedKampus)}
-                                    />
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveLevel(5)}
                                     className="h-8 w-8 p-0 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
                                 >
                                     <X className="h-3 w-3" />
@@ -825,7 +736,7 @@ export default function FinalGradesPage() {
                                 <Filter className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-1">Filter diperlukan</h3>
                                 <p className="text-sm text-gray-600">
-                                    Silakan pilih minimal <span className="font-semibold">Mata Kuliah atau Course</span> untuk memuat data.
+                                    Silakan pilih minimal <span className="font-semibold">Course</span> untuk memuat data.
                                 </p>
                             </CardContent>
                         </Card>
@@ -838,7 +749,6 @@ export default function FinalGradesPage() {
                                 Final grade distribution for {appliedFilters.kampus}
                                 {appliedFilters.fakultas && ` > ${appliedFilters.fakultas}`}
                                 {appliedFilters.prodi && ` > ${appliedFilters.prodi}`}
-                                {appliedFilters.matkul && ` > ${appliedFilters.matkul}`}
                                 {appliedFilters.course && ` > ${appliedFilters.course}`}
                             </CardDescription>
                         </CardHeader>

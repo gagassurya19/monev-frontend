@@ -321,13 +321,15 @@ export interface FinalGradesFilters {
 }
 
 export interface FinalGradeData {
-  name: string;
-  value: number[];
+  id: string;
+  courseId: string;
+  grade: number;
 }
 
 export interface FinalGradeCourse {
   id: string;
   name: string;
+  shortname?: string;
 }
 
 export interface FinalGradesResponse {

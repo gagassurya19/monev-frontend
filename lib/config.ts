@@ -118,4 +118,11 @@ export const API_ENDPOINTS = {
       DETAIL: "/api/v1/sp-etl/details",
     },
   },
+  FINAL_GRADE: {
+    BASE: "/api/v1/final-grades",
+    KAMPUS: "/kampus",
+    FACULTIES: "/faculties",
+    PRODIS: "/prodis",
+    COURSES: "/final-grade/courses",
+  },
 } as const;
