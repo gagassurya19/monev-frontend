@@ -4,7 +4,7 @@ export interface ApiResponse<T> {
   pagination?: PaginationInfo;
   filters_applied?: Record<string, any>;
   message?: string;
-  success?: boolean;
+  status: boolean;
 }
 
 export interface PaginationInfo {
@@ -312,3 +312,43 @@ export interface ETLStreamData {
   message: string;
   level: 'info' | 'error' | 'warning' | 'success';
 } 
+
+export interface FinalGradesFilters {
+  courseId?: string;
+  kampusId?: string;
+  facultyId?: string;
+  prodiId?: string;
+}
+
+export interface FinalGradeData {
+  name: string;
+  value: number[];
+}
+
+export interface FinalGradeCourse {
+  id: string;
+  name: string;
+}
+
+export interface FinalGradesResponse {
+  data: FinalGradeData[];
+  status: boolean;
+}
+export interface CourseFilterOption {
+  id: number;
+  name: string;
+}
+export interface KampusItem {
+  id: string;
+  name: string;
+}
+
+export interface Faculty {
+  id: string;
+  name: string;
+}
+
+export interface Prodi {
+  id: string;
+  name: string;
+}

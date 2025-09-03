@@ -12,6 +12,8 @@ import {
   Database,
   School,
   Users,
+  Sun,
+  ChartCandlestick,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -60,6 +62,16 @@ const data = {
       title: "Student Performance",
       url: "/student-performance",
       icon: Users,
+    },
+    {
+      title: "Heatmap", 
+      url: "/heatmap?role=mahasiswa",
+      icon: Sun, 
+    },
+    {
+      title: "Final Grade", 
+      url: "/final-grade",
+      icon: ChartCandlestick, 
     },
   ],
 };

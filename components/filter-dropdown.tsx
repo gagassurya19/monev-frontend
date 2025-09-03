@@ -11,16 +11,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getFakultas, getProdi, getMatkul } from '@/lib/api/activity';
-import { FilterOption, MatkulFilterOption } from '@/lib/types';
+import { getCoursesList } from '@/lib/api/final-grade';
+import { FilterOption, MatkulFilterOption, FinalGradeCourse } from '@/lib/types';
 
 interface FilterDropdownProps {
-  type: 'fakultas' | 'prodi' | 'matkul';
+  type: 'fakultas' | 'prodi' | 'matkul' | 'course';
   value: string;
   onValueChange: (value: string, displayName?: string) => void;
   placeholder: string;
   disabled?: boolean;
   fakultasId?: string;
   prodiId?: string;
+  matkulId?: string;
   kampus?: string;
 }
 
@@ -32,11 +34,12 @@ export function FilterDropdown({
   disabled = false,
   fakultasId,
   prodiId,
+  matkulId,
   kampus = 'bdg'
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [items, setItems] = useState<(FilterOption | MatkulFilterOption)[]>([]);
+  const [items, setItems] = useState<(FilterOption | MatkulFilterOption | FinalGradeCourse)[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -57,24 +60,30 @@ export function FilterDropdown({
       } else if (type === 'matkul') {
         if (!prodiId) return;
         response = await getMatkul(prodiId, search, pageNum, 20);
+      } else if (type === 'course') {
+        if (!prodiId) { return; }
+        response = await getCoursesList(prodiId, kampus); // Hanya prodiId dan kampus
       }
 
       if (response) {
-        const newItems = response.data;
-        if (append) {
-          setItems(prev => [...prev, ...newItems]);
-        } else {
-          setItems(newItems);
+          const newItems = response.data;
+          if (append && type !== 'course') {
+            setItems((prev) => [...prev, ...newItems]);
+          } else {
+            setItems(newItems);
+          }
+          setHasMore(
+            type !== 'course' && ('hasNextPage' in response ? response.hasNextPage : false));
+          setPage(pageNum);
         }
-        setHasMore(response.hasNextPage);
-        setPage(pageNum);
+      } catch (error) {
+        console.error(`Error fetching ${type}:`, error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(`Error fetching ${type}:`, error);
-    } finally {
-      setLoading(false);
-    }
-  }, [type, disabled, fakultasId, prodiId, kampus]);
+    },
+    [type, disabled, fakultasId, prodiId, matkulId, kampus]
+  );
 
   // Initial load
   useEffect(() => {
@@ -85,6 +94,7 @@ export function FilterDropdown({
 
   // Handle search with debounce
   useEffect(() => {
+    if (type === 'course') return;
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
@@ -98,14 +108,18 @@ export function FilterDropdown({
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [searchTerm, fetchItems]);
+  }, [searchTerm, fetchItems, type]);
 
-  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasMore && !loading) {
-      fetchItems(searchTerm, page + 1, true);
-    }
-  }, [fetchItems, searchTerm, page, hasMore, loading]);
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      if (type === 'course') return; 
+      const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+      if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasMore && !loading) {
+        fetchItems(searchTerm, page + 1, true);
+      }
+    },
+    [fetchItems, searchTerm, page, hasMore, loading, type]
+  );
 
   const handleSelect = (selectedValue: string) => {
     const selectedItem = items.find(item => getItemValue(item) === selectedValue);
@@ -114,17 +128,22 @@ export function FilterDropdown({
     setIsOpen(false);
   };
 
-  const getDisplayValue = (item: FilterOption | MatkulFilterOption) => {
+  const getDisplayValue = (item: FilterOption | MatkulFilterOption | FinalGradeCourse) => {
     if (type === 'matkul') {
       const matkulItem = item as MatkulFilterOption;
       return `${matkulItem.subject_code} - ${matkulItem.subject_name}`;
+    } else if (type === 'course') {
+      const courseItem = item as FinalGradeCourse;
+      return courseItem.name;
     }
     return (item as FilterOption).category_name;
   };
 
-  const getItemValue = (item: FilterOption | MatkulFilterOption) => {
+  const getItemValue = (item: FilterOption | MatkulFilterOption | FinalGradeCourse) => {
     if (type === 'matkul') {
       return (item as MatkulFilterOption).subject_id.toString();
+    } else if (type === 'course') {
+      return (item as FinalGradeCourse).id.toString();
     }
     return (item as FilterOption).category_id.toString();
   };
